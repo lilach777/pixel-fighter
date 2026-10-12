@@ -1,0 +1,989 @@
+{
+  "$comment": "Frame keys are rRcC as produced by the slicer (row R, column C, left to right). Verified against docs/asset-previews/<id>-frames.png. 'phases' tags attack frames with startup/active/recovery so the renderer can stretch them over the move's real frame data. All characters face right on their sheets; the renderer mirrors them.",
+  "template": {
+    "portrait": {
+      "frames": [
+        "r0c0"
+      ],
+      "ticks": 60,
+      "loop": true,
+      "note": "front-facing idle, used for select screen"
+    },
+    "intro": {
+      "frames": [
+        "r5c0",
+        "r5c1"
+      ],
+      "ticks": 30,
+      "note": "pre-round taunt from emote row"
+    },
+    "idle": {
+      "frames": [
+        "r2c0",
+        "r2c1"
+      ],
+      "ticks": 18,
+      "loop": true,
+      "note": "fighting stance from the punch row (guard frames)"
+    },
+    "walk": {
+      "frames": [
+        "r0c2",
+        "r0c3",
+        "r0c4",
+        "r0c5",
+        "r0c6",
+        "r0c7",
+        "r0c8"
+      ],
+      "ticks": 6,
+      "loop": true
+    },
+    "walkBack": {
+      "frames": [
+        "r0c8",
+        "r0c7",
+        "r0c6",
+        "r0c5",
+        "r0c4",
+        "r0c3",
+        "r0c2"
+      ],
+      "ticks": 6,
+      "loop": true,
+      "note": "derived: walk cycle played in reverse"
+    },
+    "run": {
+      "frames": [
+        "r1c0",
+        "r1c1",
+        "r1c2",
+        "r1c3",
+        "r1c4",
+        "r1c5",
+        "r1c6",
+        "r1c7",
+        "r1c8"
+      ],
+      "ticks": 3,
+      "loop": true,
+      "note": "forward dash"
+    },
+    "backdash": {
+      "frames": [
+        "r0c3",
+        "r0c2"
+      ],
+      "ticks": 6,
+      "note": "derived: walk frames, no dedicated back-dash art"
+    },
+    "crouch": {
+      "frames": [
+        "r4c0"
+      ],
+      "ticks": 8,
+      "loop": true
+    },
+    "jump": {
+      "frames": [
+        "r4c0",
+        "r1c4",
+        "r1c5"
+      ],
+      "ticks": [
+        4,
+        10,
+        60
+      ],
+      "note": "derived: no jump art on sheets; crouch take-off + mid-stride run frames in the air"
+    },
+    "block": {
+      "frames": [
+        "r2c0"
+      ],
+      "ticks": 8,
+      "loop": true,
+      "note": "derived: guard frame + engine-drawn shield flash"
+    },
+    "crouchBlock": {
+      "frames": [
+        "r4c0"
+      ],
+      "ticks": 8,
+      "loop": true,
+      "note": "derived: crouch frame + engine-drawn shield flash"
+    },
+    "hurt": {
+      "frames": [
+        "r4c1"
+      ],
+      "ticks": 8,
+      "loop": true,
+      "note": "derived: recoil crouch frame + engine hit flash/shake"
+    },
+    "knockdown": {
+      "frames": [
+        "r4c2",
+        "r4c3",
+        "r4c4",
+        "r4c6",
+        "r4c7"
+      ],
+      "ticks": [
+        5,
+        5,
+        6,
+        14,
+        30
+      ],
+      "note": "fall -> lying"
+    },
+    "dizzy": {
+      "frames": [
+        "r4c5",
+        "r4c6",
+        "r4c7"
+      ],
+      "ticks": 12,
+      "loop": true,
+      "note": "lying with stars (KO)"
+    },
+    "getup": {
+      "frames": [
+        "r4c8",
+        "r4c0"
+      ],
+      "ticks": [
+        10,
+        8
+      ]
+    },
+    "victory": {
+      "frames": [
+        "r5c4",
+        "r5c5"
+      ],
+      "ticks": 20,
+      "loop": true
+    },
+    "timeoutLoss": {
+      "frames": [
+        "r5c9"
+      ],
+      "ticks": 60,
+      "loop": true,
+      "note": "sleeping / slumped emote"
+    },
+    "lp": {
+      "frames": [
+        "r2c1",
+        "r2c2",
+        "r2c1"
+      ],
+      "phases": [
+        "startup",
+        "active",
+        "recovery"
+      ],
+      "ticks": 4
+    },
+    "hp": {
+      "frames": [
+        "r2c1",
+        "r2c3",
+        "r2c4",
+        "r2c1"
+      ],
+      "phases": [
+        "startup",
+        "active",
+        "active",
+        "recovery"
+      ],
+      "ticks": 5
+    },
+    "special": {
+      "frames": [
+        "r2c1",
+        "r2c5",
+        "r2c6",
+        "r2c1"
+      ],
+      "phases": [
+        "startup",
+        "active",
+        "active",
+        "recovery"
+      ],
+      "ticks": 6
+    },
+    "airPunch": {
+      "frames": [
+        "r2c2"
+      ],
+      "phases": [
+        "active"
+      ],
+      "ticks": 6,
+      "note": "derived: punch frame used while airborne"
+    },
+    "lk": {
+      "frames": [
+        "r3c0",
+        "r3c1",
+        "r3c0"
+      ],
+      "phases": [
+        "startup",
+        "active",
+        "recovery"
+      ],
+      "ticks": 5
+    },
+    "hk": {
+      "frames": [
+        "r3c1",
+        "r3c2",
+        "r3c2",
+        "r3c6"
+      ],
+      "phases": [
+        "startup",
+        "active",
+        "active",
+        "recovery"
+      ],
+      "ticks": 6
+    },
+    "launcher": {
+      "frames": [
+        "r3c2",
+        "r3c3",
+        "r3c4",
+        "r3c6"
+      ],
+      "phases": [
+        "startup",
+        "active",
+        "active",
+        "recovery"
+      ],
+      "ticks": 6
+    },
+    "airKick": {
+      "frames": [
+        "r3c2"
+      ],
+      "phases": [
+        "active"
+      ],
+      "ticks": 6
+    },
+    "super": {
+      "frames": [
+        "r3c3",
+        "r3c4",
+        "r3c5",
+        "r3c5",
+        "r3c6"
+      ],
+      "phases": [
+        "startup",
+        "startup",
+        "active",
+        "active",
+        "recovery"
+      ],
+      "ticks": 6
+    }
+  },
+  "characters": {
+    "rick": {
+      "notes": [
+        "Bat row (row 3) has 9 frames: bat raised x2, swing-back, overhead arc+burst, ground burst, thrust x2, spin, recover."
+      ],
+      "overrides": {
+        "lk": {
+          "frames": [
+            "r3c5",
+            "r3c6",
+            "r3c5"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 5,
+          "note": "bat poke (Rick has no kick art)"
+        },
+        "hk": {
+          "frames": [
+            "r3c1",
+            "r3c2",
+            "r3c3",
+            "r3c8"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "overhead bat swing with arc"
+        },
+        "launcher": {
+          "frames": [
+            "r3c2",
+            "r3c4",
+            "r3c4",
+            "r3c8"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "ground-burst bat slam"
+        },
+        "airKick": {
+          "frames": [
+            "r3c3"
+          ],
+          "phases": [
+            "active"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c0",
+            "r3c2",
+            "r3c7",
+            "r3c7",
+            "r3c8"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "spinning flame bat swing"
+        },
+        "knockdown": {
+          "frames": [
+            "r4c2",
+            "r4c3",
+            "r4c4",
+            "r4c6",
+            "r4c7"
+          ],
+          "ticks": [
+            5,
+            5,
+            6,
+            14,
+            30
+          ]
+        },
+        "getup": {
+          "frames": [
+            "r4c8",
+            "r4c0"
+          ],
+          "ticks": [
+            10,
+            8
+          ]
+        },
+        "timeoutLoss": {
+          "frames": [
+            "r5c9"
+          ],
+          "ticks": 60,
+          "loop": true
+        }
+      }
+    },
+    "jeremy": {
+      "notes": [
+        "Run row has 8 frames. Bat row has 8 frames: raised x2, swing-back, overhead arc+burst, ground burst, thrust, spin, recover."
+      ],
+      "overrides": {
+        "run": {
+          "frames": [
+            "r1c0",
+            "r1c1",
+            "r1c2",
+            "r1c3",
+            "r1c4",
+            "r1c5",
+            "r1c6",
+            "r1c7"
+          ],
+          "ticks": 3,
+          "loop": true
+        },
+        "lk": {
+          "frames": [
+            "r3c4",
+            "r3c5",
+            "r3c4"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 5,
+          "note": "bat jab (no kick art)"
+        },
+        "hk": {
+          "frames": [
+            "r3c1",
+            "r3c2",
+            "r3c3",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "launcher": {
+          "frames": [
+            "r3c2",
+            "r3c4",
+            "r3c4",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "airKick": {
+          "frames": [
+            "r3c3"
+          ],
+          "phases": [
+            "active"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c0",
+            "r3c2",
+            "r3c6",
+            "r3c6",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        }
+      }
+    },
+    "jcv": {
+      "notes": [
+        "Bat row has 8 frames like Jeremy."
+      ],
+      "overrides": {
+        "lk": {
+          "frames": [
+            "r3c4",
+            "r3c5",
+            "r3c4"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 5,
+          "note": "bat jab (no kick art)"
+        },
+        "hk": {
+          "frames": [
+            "r3c1",
+            "r3c2",
+            "r3c3",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "launcher": {
+          "frames": [
+            "r3c2",
+            "r3c4",
+            "r3c4",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "airKick": {
+          "frames": [
+            "r3c3"
+          ],
+          "phases": [
+            "active"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c0",
+            "r3c2",
+            "r3c6",
+            "r3c6",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        }
+      }
+    },
+    "joshua": {
+      "notes": [
+        "Kick row has 7 frames: high kick x2, jumping arc kick, ground burst, fire punch, spinning kick, ready."
+      ],
+      "overrides": {
+        "hk": {
+          "frames": [
+            "r3c0",
+            "r3c1",
+            "r3c1",
+            "r3c6"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "launcher": {
+          "frames": [
+            "r3c0",
+            "r3c2",
+            "r3c3",
+            "r3c6"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c4",
+            "r3c4",
+            "r3c5",
+            "r3c5",
+            "r3c6"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        }
+      }
+    },
+    "max-sanchez": {
+      "notes": [
+        "Kick row has 7 frames: kick x2, arc kick, burst, fire punch x2, spinning kick; ready frame is r3c6."
+      ],
+      "overrides": {
+        "hk": {
+          "frames": [
+            "r3c0",
+            "r3c1",
+            "r3c2",
+            "r3c6"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "launcher": {
+          "frames": [
+            "r3c1",
+            "r3c3",
+            "r3c3",
+            "r3c6"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c3",
+            "r3c4",
+            "r3c5",
+            "r3c5",
+            "r3c6"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        }
+      }
+    },
+    "koala": {
+      "notes": [
+        "Row 0 has 12 frames (2 front, 7 walk, 3 back). Chainsaw row 2 has 7 frames; row 3 has 8 (idle saw, sparking saw, blood swing, leaping arc, short thrust, flame thrust, spin, ready)."
+      ],
+      "overrides": {
+        "lk": {
+          "frames": [
+            "r3c0",
+            "r3c1",
+            "r3c0"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 5,
+          "note": "chainsaw rev poke"
+        },
+        "hk": {
+          "frames": [
+            "r3c1",
+            "r3c2",
+            "r3c2",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "blood-splatter chainsaw swing"
+        },
+        "launcher": {
+          "frames": [
+            "r3c4",
+            "r3c3",
+            "r3c3",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "leaping chainsaw arc"
+        },
+        "airKick": {
+          "frames": [
+            "r3c3"
+          ],
+          "phases": [
+            "active"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c4",
+            "r3c5",
+            "r3c6",
+            "r3c6",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "flaming chainsaw spin"
+        }
+      }
+    },
+    "migo": {
+      "notes": [
+        "Row 0 has 11 frames (9 side frames, 2 back). Sword row 2 has 8 frames; row 3 has 8. Victory uses the cheering frame r5c0."
+      ],
+      "overrides": {
+        "intro": {
+          "frames": [
+            "r5c4",
+            "r5c5"
+          ],
+          "ticks": 30
+        },
+        "hp": {
+          "frames": [
+            "r2c2",
+            "r2c3",
+            "r2c4",
+            "r2c1"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 5,
+          "note": "sword arc slash"
+        },
+        "special": {
+          "frames": [
+            "r2c6",
+            "r2c7",
+            "r2c7",
+            "r2c1"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6,
+          "note": "sword thrust wave"
+        },
+        "lk": {
+          "frames": [
+            "r3c1",
+            "r3c1",
+            "r3c0"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "recovery"
+          ],
+          "ticks": 5,
+          "note": "low sword poke"
+        },
+        "hk": {
+          "frames": [
+            "r3c1",
+            "r3c2",
+            "r3c2",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "launcher": {
+          "frames": [
+            "r3c3",
+            "r3c4",
+            "r3c4",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c3",
+            "r3c5",
+            "r3c6",
+            "r3c6",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "knockdown": {
+          "frames": [
+            "r4c3",
+            "r4c5",
+            "r4c7",
+            "r4c8"
+          ],
+          "ticks": [
+            5,
+            6,
+            14,
+            30
+          ]
+        },
+        "dizzy": {
+          "frames": [
+            "r4c6",
+            "r4c8",
+            "r4c9"
+          ],
+          "ticks": 12,
+          "loop": true
+        },
+        "getup": {
+          "frames": [
+            "r4c5",
+            "r4c0"
+          ],
+          "ticks": [
+            10,
+            8
+          ]
+        },
+        "victory": {
+          "frames": [
+            "r5c0",
+            "r5c6"
+          ],
+          "ticks": 20,
+          "loop": true
+        },
+        "timeoutLoss": {
+          "frames": [
+            "r5c8"
+          ],
+          "ticks": 60,
+          "loop": true
+        }
+      }
+    },
+    "jeff-garzik": {
+      "notes": [
+        "Kick row has 8 frames: high kick x2, jump kick, arc+burst, burst+fireball, punch thrust, spinning kick, ready."
+      ],
+      "overrides": {
+        "hk": {
+          "frames": [
+            "r3c0",
+            "r3c1",
+            "r3c1",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "launcher": {
+          "frames": [
+            "r3c2",
+            "r3c3",
+            "r3c3",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        },
+        "airKick": {
+          "frames": [
+            "r3c2"
+          ],
+          "phases": [
+            "active"
+          ],
+          "ticks": 6
+        },
+        "super": {
+          "frames": [
+            "r3c4",
+            "r3c5",
+            "r3c6",
+            "r3c6",
+            "r3c7"
+          ],
+          "phases": [
+            "startup",
+            "startup",
+            "active",
+            "active",
+            "recovery"
+          ],
+          "ticks": 6
+        }
+      }
+    }
+  }
+}

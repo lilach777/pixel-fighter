@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+client/dist/
+server/dist/
+
+# Test output
+test-results/
+playwright-report/
+
+# Local environment and secrets (keep only the example)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs, caches, scratch
+*.log
+.cache/
+scratch/
+
+# Editor / OS / local tooling
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,5 @@
+{
+  "$comment": "Manual, documented slicing corrections in source-sheet pixel coordinates. 'cuts' splits a group at x; 'mergeLeft' merges the group containing the point into its left neighbour. Each entry was verified against docs/asset-previews/<id>-frames.png.",
+  "cuts": {},
+  "mergeLeft": {}
+}

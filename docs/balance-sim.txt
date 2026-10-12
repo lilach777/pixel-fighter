@@ -1,0 +1,25 @@
+matches=336 avgSeconds=79.6 difficulty=normal
+rick             win%=63
+jeremy           win%=58
+jcv              win%=49
+joshua           win%=38
+max-sanchez      win%=30
+koala            win%=65
+migo             win%=61
+jeff-garzik      win%=36
+{
+  roundStart: 817,
+  fight: 817,
+  special: 13269,
+  projectile: 6945,
+  jump: 1100,
+  hit: 27756,
+  dash: 401,
+  knockdown: 3087,
+  block: 10722,
+  super: 2337,
+  ko: 817,
+  roundEnd: 817,
+  matchEnd: 336,
+  clash: 378
+}

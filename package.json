@@ -1,0 +1,50 @@
+{
+  "name": "pixel-fighters-arcade",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pixel Fighters: Arcade — browser pixel-art fighting game with AI, local versus and server-authoritative online multiplayer.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c magenta,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "vite --config client/vite.config.ts",
+    "dev:server": "tsx watch server/src/index.ts",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "tsc -p client/tsconfig.json && vite build --config client/vite.config.ts && node scripts/prune-dist.mjs",
+    "build:server": "tsc -p server/tsconfig.json && esbuild server/src/index.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=server/dist/index.js",
+    "start": "node server/dist/index.js",
+    "preview": "vite preview --config client/vite.config.ts",
+    "typecheck": "tsc -p client/tsconfig.json && tsc -p server/tsconfig.json && tsc -p scripts/tsconfig.json",
+    "assets:inspect": "tsx scripts/inspect-sheets.ts",
+    "assets:process": "tsx scripts/process-sprites.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "docs:generate": "tsx scripts/generate-docs.ts",
+    "simulate": "tsx scripts/simulate.ts"
+  },
+  "dependencies": {
+    "pngjs": "^7.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^26.6.5",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  }
+}

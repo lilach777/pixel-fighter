@@ -1,0 +1,24 @@
+# Render Blueprint: one Node web service that serves the frontend and the WebSocket game server.
+# Render terminates HTTPS, so the game is reachable at https://<name>.onrender.com and wss://<name>.onrender.com/ws
+services:
+  - type: web
+    name: pixel-fighters
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_CLIENT
+        value: "true"
+      - key: NODE_VERSION
+        value: "22"
+      # All Render traffic passes through Cloudflare, which sets CF-Connecting-IP to the real
+      # client IP (client-supplied values are rejected at the edge). X-Forwarded-For on Render
+      # keeps client-supplied entries, so it is NOT used for the per-IP connection limit.
+      - key: TRUST_PROXY
+        value: cloudflare
+      # ALLOWED_ORIGINS is not set: in production it defaults to "self" (the page's own host),
+      # which is correct for this single-service setup. "*" is refused in production.

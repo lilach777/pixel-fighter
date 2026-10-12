@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sprite Transparency Preview</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #1a1424; color: #eee; font: 14px ui-monospace, monospace; }
+      header { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+      select, input { font: inherit; background: #2a2038; color: #fff; border: 1px solid #555; padding: 4px; }
+      .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+      figure { margin: 0; }
+      figcaption { color: #aaa; margin-bottom: 4px; }
+      canvas { image-rendering: pixelated; border: 1px solid #444; display: block; max-width: 100%; }
+      .stat { color: #9fe; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Sprite transparency preview (dev tool)</strong>
+      <label>Character <select id="char"></select></label>
+      <label>Frame <select id="frame"></select></label>
+      <label>Zoom <input id="zoom" type="number" min="1" max="8" value="3" style="width: 4em" /></label>
+      <span class="stat" id="stats"></span>
+    </header>
+    <div class="row">
+      <figure><figcaption>1. Original source sheet (checker baked in)</figcaption><canvas id="source"></canvas></figure>
+      <figure><figcaption>2. Processed atlas (real alpha, over checker-free magenta)</figcaption><canvas id="atlas"></canvas></figure>
+    </div>
+    <h3>3. Extracted frame &amp; 4. over contrasting backgrounds</h3>
+    <div class="row" id="frames"></div>
+    <script type="module" src="/src/assetPreview.ts"></script>
+  </body>
+</html>
