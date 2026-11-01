@@ -3,12 +3,14 @@ import { ROSTER } from '../../../shared/src/characters/roster';
 import type { ButtonName } from '../../../shared/src/input';
 import { Menu } from '../components/Menu';
 import { audio } from '../game/audio/audio';
-import { BUTTON_LABELS, BUTTON_ORDER, P1_DEFAULT, P2_ALT, P2_DEFAULT, keyLabel, type Bindings } from '../game/input/bindings';
+import { BUTTON_LABELS, BUTTON_ORDER, P1_DEFAULT, keyLabel, type Bindings } from '../game/input/bindings';
 import { resetSettings, updateSettings, useSettings } from '../settings';
+import { isTypingTarget } from '../components/isTyping';
 
 export function TitleScreen({ onStart }: { onStart: () => void }) {
   useEffect(() => {
     const go = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return; // never steal keys from text fields
       if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyF') {
         e.preventDefault();
         audio.unlock();
@@ -35,7 +37,7 @@ export function TitleScreen({ onStart }: { onStart: () => void }) {
         <span className="l2">FIGHTERS</span>
         <span className="tag">— ARCADE —</span>
       </div>
-      <div className="hint title-sub">{ROSTER.length} fighters · CPU · Local versus · Online</div>
+      <div className="hint title-sub">{ROSTER.length} fighters · CPU · Online</div>
       <div style={{ flex: 1 }} />
       <div className="title-prompt">
         <span className="hint">ENTER / CLICK</span>
@@ -57,7 +59,7 @@ export function MainMenu({ onPlay, onHowTo, onOptions }: { onPlay: () => void; o
       </div>
       <Menu
         items={[
-          { label: 'PLAY', desc: 'Arcade, local versus or online', testId: 'menu-play', onSelect: onPlay },
+          { label: 'PLAY', desc: 'Single player vs CPU or online versus', testId: 'menu-play', onSelect: onPlay },
           { label: 'HOW TO PLAY', desc: 'Controls and move lists', testId: 'menu-howto', onSelect: onHowTo },
           { label: 'OPTIONS', desc: 'Audio, display, rules, keys', testId: 'menu-options', onSelect: onOptions },
         ]}
@@ -71,7 +73,7 @@ export function MainMenu({ onPlay, onHowTo, onOptions }: { onPlay: () => void; o
   );
 }
 
-export function PlayMenu({ onCpu, onLocal, onOnline, onBack }: { onCpu: () => void; onLocal: () => void; onOnline: () => void; onBack: () => void }) {
+export function PlayMenu({ onCpu, onOnline, onBack }: { onCpu: () => void; onOnline: () => void; onBack: () => void }) {
   return (
     <div className="screen-inner over-scene" data-testid="play-menu">
       <h2 className="heading" style={{ marginTop: '6cqh' }}>
@@ -81,7 +83,6 @@ export function PlayMenu({ onCpu, onLocal, onOnline, onBack }: { onCpu: () => vo
         onBack={onBack}
         items={[
           { label: '1 PLAYER  VS CPU', desc: 'Fight the computer (Easy / Normal / Hard)', testId: 'mode-cpu', onSelect: onCpu },
-          { label: '2 PLAYERS  LOCAL', desc: 'Two players, one keyboard', testId: 'mode-local', onSelect: onLocal },
           { label: 'ONLINE  VERSUS', desc: 'Create or join a room over the internet', testId: 'mode-online', onSelect: onOnline },
           { label: 'BACK', testId: 'mode-back', onSelect: onBack },
         ]}
@@ -129,10 +130,8 @@ export function HowToPlay({ onBack }: { onBack: () => void }) {
       <h2 className="heading">HOW TO PLAY</h2>
       <div className="columns">
         <div className="panel scroll">
-          <div className="sub" style={{ textAlign: 'left', color: 'var(--p1)' }}>PLAYER 1</div>
+          <div className="sub" style={{ textAlign: 'left', color: 'var(--p1)' }}>CONTROLS</div>
           <KeysTable b={s.p1} />
-          <div className="sub" style={{ textAlign: 'left', color: 'var(--p2)', marginTop: '2cqh' }}>PLAYER 2</div>
-          <KeysTable b={s.p2} />
           <div className="movelist" style={{ marginTop: '2cqh' }}>
             <h4>BASICS</h4>
             Hold <b>back</b> to block (crouch-block lows, stand-block overheads and jump-ins). Double-tap forward/back to dash.
@@ -180,6 +179,7 @@ export function HowToPlay({ onBack }: { onBack: () => void }) {
 function useEscape(fn: () => void) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return; // never steal keys from text fields
       if (e.code === 'Escape') {
         e.preventDefault();
         fn();
@@ -190,8 +190,9 @@ function useEscape(fn: () => void) {
   }, [fn]);
 }
 
-function BindingEditor({ player }: { player: 'p1' | 'p2' }) {
+function BindingEditor() {
   const s = useSettings();
+  const player = 'p1';
   const b = s[player];
   const [listening, setListening] = useState<ButtonName | null>(null);
   useEffect(() => {
@@ -295,19 +296,8 @@ export function Options({ onBack }: { onBack: () => void }) {
               ))}
             </div>
           </div>
-          <div className="option-row">
-            <span>Player 2 layout</span>
-            <div className="segmented">
-              <button onClick={() => updateSettings({ p2: P2_DEFAULT })} data-testid="opt-p2-numpad">
-                NUMPAD
-              </button>
-              <button onClick={() => updateSettings({ p2: P2_ALT })} data-testid="opt-p2-alt">
-                NO NUMPAD
-              </button>
-            </div>
-          </div>
           <div className="row" style={{ marginTop: '2cqh' }}>
-            <button className="btn" onClick={() => updateSettings({ p1: P1_DEFAULT, p2: P2_DEFAULT })}>
+            <button className="btn" onClick={() => updateSettings({ p1: P1_DEFAULT })}>
               RESET KEYS
             </button>
             <button className="btn" onClick={resetSettings} data-testid="opt-reset">
@@ -316,10 +306,8 @@ export function Options({ onBack }: { onBack: () => void }) {
           </div>
         </div>
         <div className="panel scroll">
-          <div className="sub" style={{ textAlign: 'left', color: 'var(--p1)' }}>PLAYER 1 KEYS (also used online)</div>
-          <BindingEditor player="p1" />
-          <div className="sub" style={{ textAlign: 'left', color: 'var(--p2)', marginTop: '2cqh' }}>PLAYER 2 KEYS</div>
-          <BindingEditor player="p2" />
+          <div className="sub" style={{ textAlign: 'left', color: 'var(--p1)' }}>KEYS (single player and online)</div>
+          <BindingEditor />
         </div>
       </div>
       <div className="row">

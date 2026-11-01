@@ -1,19 +1,18 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Starts a local match with Max Sanchez, fills his meter (the only state injected), fires
+ * Starts a single-player match as Max Sanchez against a still CPU on the rooftop stage
+ * (test build: ?cpu=idle&stage=rooftop), fills his meter (the only state injected), fires
  * the super and, on every rendered frame showing the flame-ring frame r3c5, counts
  * checker-grey pixels (neutral grey in the checkerboard's luma range) on the real game
  * canvas inside a box around Max. Returns the maximum seen and how many frames were sampled.
  */
-export async function measureSuperChecker(page: Page, url = '/'): Promise<{ maxGrey: number; samples: number }> {
+export async function measureSuperChecker(page: Page, url = '/?cpu=idle&stage=rooftop'): Promise<{ maxGrey: number; samples: number }> {
   await page.goto(url);
   await page.getByTestId('title-screen').click();
   await page.getByTestId('menu-play').click();
-  await page.getByTestId('mode-local').click();
+  await page.getByTestId('mode-cpu').click();
   await page.getByTestId('char-max-sanchez').click();
-  await page.getByTestId('char-joshua').click();
-  await page.getByTestId('stage-rooftop').click();
   await page.getByTestId('versus-screen').click();
   await page.waitForSelector('[data-testid=hud][data-phase=fight]', { timeout: 15000 });
   await page.evaluate(() => {

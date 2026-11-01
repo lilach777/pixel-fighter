@@ -12,19 +12,21 @@ import { KeyboardState } from '../input/keyboard';
 import { Renderer } from '../rendering/renderer';
 import { blendPositions, capturePositions, type PositionSnapshot } from './interpolation';
 
+/** Options for an offline match: the player (keyboard) against a CPU opponent. */
 export interface LocalMatchOptions {
-  mode: 'cpu' | 'local';
   p1: string;
   p2: string;
   difficulty: Difficulty;
   stage: string;
   roundSeconds: number;
   roundsToWin: number;
+  /** Test builds only: the CPU stands still (deterministic e2e checks). Never set in production. */
+  idleOpponent?: boolean;
 }
 
 const SPRITE_HEIGHT = 168;
 
-export type ControllerType = 'keyboard-p1' | 'keyboard-p2' | 'ai' | 'remote';
+export type ControllerType = 'keyboard-p1' | 'ai' | 'idle' | 'remote';
 
 /**
  * Runs an offline match: fixed 60 Hz simulation steps driven by requestAnimationFrame
@@ -49,16 +51,15 @@ export class LocalRunner {
   /** Development diagnostics (shown by the debug panel). */
   readonly debug = { loopRunning: false, steps: 0, lastInput: [0, 0] as [number, number], lastHit: null as null | { frame: number; attacker: number; damage: number } };
 
-  /** Who drives each fighter: P1 is always the local keyboard; P2 is the AI (CPU mode) or the second keyboard player. */
+  /** Who drives each fighter: P1 is the keyboard; P2 is the CPU (AI). */
   readonly controllers: [ControllerType, ControllerType];
 
   constructor(readonly opts: LocalMatchOptions) {
-    if (opts.mode === 'cpu' && opts.p1 === opts.p2) throw new Error('Single-player opponent must differ from the player character');
+    if (opts.p1 === opts.p2) throw new Error('Single-player opponent must differ from the player character');
     this.state = this.newState();
-    // Opponent selection already happened; AI initialisation is a separate step and only for CPU mode.
-    this.ai = opts.mode === 'cpu' ? new AIController(1, opts.difficulty, Date.now() & 0xffff) : null;
-    if (opts.mode === 'cpu' && !this.ai) throw new Error('AI controller failed to initialise');
-    this.controllers = ['keyboard-p1', this.ai ? 'ai' : 'keyboard-p2'];
+    // Opponent selection already happened; AI initialisation is a separate step.
+    this.ai = opts.idleOpponent ? null : new AIController(1, opts.difficulty, Date.now() & 0xffff);
+    this.controllers = ['keyboard-p1', this.ai ? 'ai' : 'idle'];
     const n1 = getCharacter(opts.p1).name;
     const n2 = getCharacter(opts.p2).name;
     this.names = [n1, n2];
@@ -74,7 +75,7 @@ export class LocalRunner {
     if (this.keyboard) this.detach();
     const s = getSettings();
     this.keyboard = new KeyboardState();
-    this.keyboard.capture(allCodes(s.p1, s.p2));
+    this.keyboard.capture(allCodes(s.p1));
     this.renderer = new Renderer(canvas, this.opts.stage);
     void Promise.all([loadCharacterSprites(this.opts.p1, SPRITE_HEIGHT), loadCharacterSprites(this.opts.p2, SPRITE_HEIGHT)])
       .then((s) => this.renderer?.setSprites(s))
@@ -136,7 +137,7 @@ export class LocalRunner {
     const s = getSettings();
     const held = this.keyboard?.held ?? new Set<string>();
     const p1 = bitsFromKeys(s.p1, held);
-    const p2 = this.ai ? this.ai.update(this.state) : bitsFromKeys(s.p2, held);
+    const p2 = this.ai ? this.ai.update(this.state) : 0;
     const wasEnded = this.state.phase === 'matchEnd';
     const events = stepMatch(this.state, [p1, p2]);
     this.debug.steps++;

@@ -44,8 +44,8 @@ test('menu input stays responsive while the fight runs; one loop; stops in a mat
   const d = await demo(page);
   expect(d.running).toBe(true);
   expect(d.pairsShown).toBe(1);
-  // Entering a match stops the demo loop.
-  await page.getByTestId('mode-local').click();
+  // Leaving the menus (character select, then a match) stops the demo loop.
+  await page.getByTestId('mode-cpu').click();
   await expect(page.getByTestId('title-scene')).toHaveCount(0);
   expect((await demo(page)).running).toBe(false);
 });
@@ -71,15 +71,17 @@ test('title layout adapts to small and large windows', async ({ page }) => {
 });
 
 test('in-match movement renders smoothly on every displayed frame', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?cpu=idle&stage=rooftop');
   await page.getByTestId('title-screen').click();
   await page.getByTestId('menu-play').click();
-  await page.getByTestId('mode-local').click();
+  await page.getByTestId('mode-cpu').click();
   await page.getByTestId('char-jcv').click();
-  await page.getByTestId('char-rick').click();
-  await page.getByTestId('stage-rooftop').click();
   await page.getByTestId('versus-screen').click();
   await expect(page.getByTestId('hud')).toHaveAttribute('data-phase', 'fight', { timeout: 10_000 });
+  // Measure rendering, not asset loading: the CPU opponent is random, so its atlas may still be
+  // downloading/decoding (a one-off main-thread stall). Start once both fighters' sprites are in.
+  await expect.poll(() => page.evaluate(() => !!(window as any).__PF.runner.renderer?.spritesLoaded), { timeout: 10_000 }).toBe(true);
+  await page.waitForTimeout(300);
   const rec = page.evaluate(async () => {
     const pf = (window as any).__PF;
     const xs: number[] = [];

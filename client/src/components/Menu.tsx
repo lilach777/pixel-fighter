@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { audio } from '../game/audio/audio';
+import { isTypingTarget } from './isTyping';
 
 export interface MenuItem {
   label: string;
@@ -22,6 +23,8 @@ export function Menu({ items, onBack, autoFocus = true }: { items: MenuItem[]; o
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Typing in a text field (e.g. the online name box) must not drive the menu.
+      if (isTypingTarget(e.target)) return;
       const list = itemsRef.current;
       const move = (d: number) => {
         e.preventDefault();

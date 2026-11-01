@@ -105,3 +105,26 @@ test('online: create, join, ready up and fight a synchronized match', async ({ b
   await ctxA.close();
   await ctxB.close();
 });
+
+test('online lobby: typing in the name field never triggers menu shortcuts', async ({ page }) => {
+  await page.goto('/?screen=online');
+  await expect(page.getByTestId('online-lobby')).toBeVisible();
+  const name = page.getByTestId('name-input');
+  await name.click();
+  await name.press('Control+A');
+  await name.press('Delete');
+  // W / S / F are menu keys (up / down / select) elsewhere; here they are just letters.
+  await page.keyboard.type('Wrongs Fname', { delay: 20 });
+  await expect(name).toHaveValue('Wrongs Fname');
+  // Backspace deletes characters instead of leaving the screen (the reported bug).
+  for (let i = 0; i < 5; i++) await page.keyboard.press('Backspace');
+  await expect(name).toHaveValue('Wrongs ');
+  await expect(page.getByTestId('online-lobby')).toBeVisible();
+  // Escape inside the field doesn't navigate either.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('online-lobby')).toBeVisible();
+  // Outside the field the menu shortcuts still work: Escape goes back to mode select.
+  await name.blur();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('play-menu')).toBeVisible();
+});

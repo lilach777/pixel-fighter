@@ -53,7 +53,6 @@ Integration tests open **real WebSocket connections** to a real server instance 
 | 9–11 | A heavy punch in range deals exactly its damage; the opponent enters hit-stun and is pushed back; a second attack works; an out-of-range attack does no damage |
 | block | Holding back blocks a jab (blockstun, no damage) |
 | 12 | With no player input, the CPU opponent moves and damages the player |
-| 13 | Local P2 is `keyboard-p2`, stays still without input and moves with the arrows |
 | 14 | Online: the two-browser test also asserts mode `online` with no AI |
 | 15 | Restart keeps the opponent and resets phase, round, health and timer |
 | debug | The panel shows correct values on dev and is absent from the production build |
@@ -67,7 +66,6 @@ Unit: `tests/unit/opponent.test.ts` (never the same fighter, all 8 others reacha
 | main menu, how to play and options all work | title → menu, keyboard navigation, Escape back, move list paging, options toggle |
 | character selection shows all eight fighters and starts a CPU match | all eight portraits (and no others) load real art, preview, difficulty, stage select, HUD names/timer/round |
 | movement, attacks, health, timer and the pause menu (vs CPU) | key presses move the fighter, attacks reduce health, timer counts down, pause freezes the simulation, resume continues |
-| local two-player: both keyboards control their fighter | WASD and arrows move both fighters simultaneously; P2 numpad attack damages P1 |
 | knockout, results screen and rematch | two real KOs → results "PLAYER 1 WINS!" 2-0 → rematch resets round, wins and timer |
 | online: create, join, ready up and fight | two browser contexts: create → invalid code error → join → ready gating → match on both → server-decided damage identical on both screens → remote movement visible → forfeit shows win screen |
 | capture screenshots | renders title, select, match, super and hitbox views (`docs/screenshots/`) |
@@ -79,6 +77,10 @@ Unit: `tests/unit/opponent.test.ts` (never the same fighter, all 8 others reacha
 * **Frame-rate-dependent effects:** particles, shake and stage lights advanced once per rendered frame (2.4× too fast at 144 Hz). They now advance per simulation frame.
 * **Title demo:** `tests/unit/animation.test.ts` runs the director for 2 simulated minutes on three pairings. It asserts the fight never ends, has more than 20 exchanges, more than 20 hits, blocks, knockdowns, specials/supers and at least 6 different beat types, includes pauses but never idles over 3 s, and keeps fighters inside the stage. `tests/e2e/title.spec.ts` checks two different real roster fighters, real hits and blocks, an animating canvas, the logo above the fighters, instant menu input, a single loop across title → menu → mode select, the loop stopping when a match starts, and layout at 640×400, 1600×900 and 900×900.
 * Tuning found by testing: the director re-spaced the fighters after almost every exchange, leaving some pairings with only 2 hits per 20 s. With tighter re-spacing rules, the worst of 168 pairing×seed runs has 5 hits per 20 s and the median is 10.
+
+## Local two-player mode removed
+
+Local versus (two players on one keyboard) was removed from the game. Tests that used it to get a still opponent now use single player with a **test-only** switch: `?cpu=idle` (the CPU stands still) and `?stage=<id>` (a fixed stage). Both work only in development builds and builds made with `VITE_E2E=true`; a normal `npm run build` contains neither. The tests specific to local versus, and the Player 2 key-layout unit test, were deleted. The block test now blocks a real CPU attack instead of Player 2's numpad jab.
 
 ## Bugs found by the tests and fixed
 

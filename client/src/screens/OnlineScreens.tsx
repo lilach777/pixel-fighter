@@ -9,6 +9,7 @@ import type { NetClient, NetView } from '../multiplayer/netClient';
 import { OnlineRunner } from '../multiplayer/onlineRunner';
 import { getSettings, updateSettings } from '../settings';
 import { TEST_HOOKS } from '../testHooks';
+import { isTypingTarget } from '../components/isTyping';
 
 function useNet(net: NetClient): NetView {
   return useSyncExternalStore(net.subscribe, net.getView);
@@ -174,6 +175,7 @@ function RoomScreen({ net }: { net: NetClient }) {
   };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return; // never steal keys from text fields
       if (e.code === 'Escape') net.leaveRoom();
     };
     window.addEventListener('keydown', onKey);
@@ -293,6 +295,7 @@ function OnlineMatchScreen({ net, stage }: { net: NetClient; stage: string }) {
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
     const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return; // never steal keys from text fields
       if (e.code === 'Escape') setMenu((m) => !m);
     };
     window.addEventListener('keydown', onKey);

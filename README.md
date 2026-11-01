@@ -1,6 +1,6 @@
 # Pixel Fighters: Arcade
 
-A browser pixel-art fighting game with eight fighters built from the supplied character sprite sheets. It has a single-player mode against a three-level AI, local two-player versus on one keyboard, and **online multiplayer** through an authoritative Node.js WebSocket server. The arcade presentation (CRT frame, purple neon, night-city stage, centre timer, combo counter, named supers) is inspired by the *Agent Fighter* reference video.
+A browser pixel-art fighting game with eight fighters built from the supplied character sprite sheets. It has a single-player mode against a three-level AI and **online multiplayer** through an authoritative Node.js WebSocket server. The arcade presentation (CRT frame, purple neon, night-city stage, centre timer, combo counter, named supers) is inspired by the *Agent Fighter* reference video.
 
 ![Title](docs/screenshots/01-title.png)
 
@@ -43,27 +43,26 @@ The title and menus play a live fight between two randomly chosen roster fighter
 ## Modes
 
 * **1 Player vs CPU**: pick your fighter and CPU level. The opponent is then chosen automatically at random from the other seven fighters, shown on a VS screen with a 3-2-1 countdown, and played by the AI. Rematch keeps the same opponent; **NEW OPPONENT** on the results screen draws a new one.
-* **2 Players Local**: both players pick on the same screen with their own keys.
 * **Online Versus**: create a room, share the 5-character code, the friend joins, both choose a fighter and press READY. The match runs on the server. Afterwards you can vote for a rematch, change fighter or leave.
 
 Rules: 60-second rounds, best of three (both configurable in Options). A timeout goes to the higher remaining health percentage.
 
 ## Controls
 
-| Action | Player 1 | Player 2 (default) | Player 2 (no-numpad layout) |
-|---|---|---|---|
-| Move / jump / crouch | A D / W / S | ← → / ↑ / ↓ | ← → / ↑ / ↓ |
-| Light / Heavy Punch | F / G | Numpad 1 / 2 | I / O |
-| Light / Heavy Kick | V / B | Numpad 4 / 5 | K / L |
-| Special / Super | H / J | Numpad 7 / 8 | P / ; |
+| Action | Keys |
+|---|---|
+| Move / jump / crouch | A D / W / S |
+| Light / Heavy Punch | F / G |
+| Light / Heavy Kick | V / B |
+| Special / Super | H / J |
 
 * **Block:** hold away from the opponent. Crouch-block lows; stand-block overheads and jump-ins.
 * **Dash:** double-tap forward or back. Attacks pressed during a forward dash come out as dash attacks.
 * **Specials:** Special, or Down + Special for the alternate special. Down + Heavy Kick is a sweep/launcher.
 * **Super:** when the meter shows SUPER READY.
 * **Combos:** land a light attack, then press a heavy or special during its cancel window. Damage scales down over long combos.
-* **Esc** pauses offline matches. Online play uses the Player 1 keys on both computers.
-* Every key can be rebound in **Options** (stored in the browser). Some keyboards cannot register many simultaneous keys ("ghosting"); if a two-player combination doesn't register, switch Player 2 to the no-numpad layout or rebind.
+* **Esc** pauses single-player matches. Online play uses the same keys on both computers.
+* Every key can be rebound in **Options** (stored in the browser).
 
 Full move lists and frame data: [docs/MOVES.md](docs/MOVES.md) (also in-game under HOW TO PLAY).
 
@@ -101,7 +100,7 @@ See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. In short:
 
 * **Recommended:** one Node web service that serves the built client and the WebSocket server on one HTTPS origin. Render (`render.yaml` blueprint included) or any Docker host (`Dockerfile` included). Build with `npm ci --include=dev && npm run build`, start with `npm start`, health check `/health`. In production the server accepts WebSockets only from its own host by default; behind a proxy set `TRUST_PROXY` (`cloudflare` on Render, or `xff` with `TRUSTED_PROXIES`; see the deployment guide).
 * **Split hosting:** a static host for `client/dist` (built with `VITE_WS_URL=wss://your-server/ws`) plus a WebSocket-capable Node host for the server.
-* Static hosts cannot run the game server. Production must use `wss://`.
+* Static hosts cannot run the game server. **Vercel, Netlify, GitHub Pages and similar can host only the frontend**: online play there shows *SERVER UNAVAILABLE* unless the frontend is built with `VITE_WS_URL` pointing at a game server running on a WebSocket-capable host (for example Render). Production must use `wss://`.
 
 **Status:** not yet deployed publicly; this needs your hosting account. Everything was verified locally (see Testing).
 

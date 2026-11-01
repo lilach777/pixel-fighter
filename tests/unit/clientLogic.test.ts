@@ -4,7 +4,7 @@ import { createMatch } from '../../shared/src/engine/state';
 import { Btn } from '../../shared/src/input';
 import { toNetState } from '../../shared/src/protocol';
 import { ComboTracker, deriveHud } from '../../client/src/game/hud';
-import { P1_DEFAULT, P2_ALT, P2_DEFAULT, allCodes, bitsFromKeys } from '../../client/src/game/input/bindings';
+import { P1_DEFAULT, bitsFromKeys } from '../../client/src/game/input/bindings';
 import { interpolate } from '../../client/src/multiplayer/onlineRunner';
 import { fightState, run } from './helpers';
 
@@ -14,15 +14,6 @@ describe('keyboard bindings', () => {
     expect(bitsFromKeys(P1_DEFAULT, new Set(['KeyW', 'KeyS', 'KeyG', 'KeyV', 'KeyB', 'KeyJ', 'KeyD']))).toBe(
       Btn.UP | Btn.DOWN | Btn.HP | Btn.LK | Btn.HK | Btn.SU | Btn.RIGHT,
     );
-    expect(bitsFromKeys(P2_DEFAULT, new Set(['ArrowRight', 'Numpad1', 'Numpad2', 'Numpad4', 'Numpad5', 'Numpad7', 'Numpad8']))).toBe(
-      Btn.RIGHT | Btn.LP | Btn.HP | Btn.LK | Btn.HK | Btn.SP | Btn.SU,
-    );
-  });
-
-  it('player 1 and the alternative player 2 layout never share keys', () => {
-    const p1 = allCodes(P1_DEFAULT);
-    for (const c of allCodes(P2_ALT)) expect(p1.has(c), c).toBe(false);
-    for (const c of allCodes(P2_DEFAULT)) expect(p1.has(c), c).toBe(false);
   });
 });
 

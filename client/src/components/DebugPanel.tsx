@@ -35,7 +35,7 @@ export function DebugPanel({ runner }: { runner: LocalRunner }) {
   const drawn = runner.renderer?.lastFrames[0];
   const hit = runner.debug.lastHit;
   const rows: [string, string][] = [
-    ['mode', runner.opts.mode],
+    ['mode', 'cpu'],
     ['player', getCharacter(runner.opts.p1).name],
     ['opponent', getCharacter(runner.opts.p2).name],
     ['controllers', runner.controllers.join(' / ')],

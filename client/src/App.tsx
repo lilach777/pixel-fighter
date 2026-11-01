@@ -5,11 +5,12 @@ import { NetClient } from './multiplayer/netClient';
 import { HowToPlay, MainMenu, Options, PlayMenu, TitleScreen } from './screens/MenuScreens';
 import { MatchScreen } from './screens/MatchScreen';
 import { OnlineFlow } from './screens/OnlineScreens';
-import { CharacterSelect, StageSelect, VersusScreen, type SelectResult } from './screens/SelectScreens';
+import { CharacterSelect, VersusScreen, type SelectResult } from './screens/SelectScreens';
 import { pickOpponent } from '../../shared/src/characters/opponent';
 import { STAGES } from './game/rendering/stages';
 import { getSettings, useSettings } from './settings';
 import { TitleScene } from './components/TitleScene';
+import { TEST_HOOKS } from './testHooks';
 
 type Route =
   | { s: 'title' }
@@ -17,8 +18,7 @@ type Route =
   | { s: 'play' }
   | { s: 'howto' }
   | { s: 'options' }
-  | { s: 'select'; mode: 'cpu' | 'local' }
-  | { s: 'stage'; mode: 'cpu' | 'local'; pick: SelectResult }
+  | { s: 'select' }
   | { s: 'versus'; opts: LocalMatchOptions }
   | { s: 'match'; opts: LocalMatchOptions; key: number }
   | { s: 'online' };
@@ -58,14 +58,7 @@ export default function App() {
       screen = <MainMenu onPlay={toPlay} onHowTo={() => setRoute({ s: 'howto' })} onOptions={() => setRoute({ s: 'options' })} />;
       break;
     case 'play':
-      screen = (
-        <PlayMenu
-          onCpu={() => setRoute({ s: 'select', mode: 'cpu' })}
-          onLocal={() => setRoute({ s: 'select', mode: 'local' })}
-          onOnline={() => setRoute({ s: 'online' })}
-          onBack={toMenu}
-        />
-      );
+      screen = <PlayMenu onCpu={() => setRoute({ s: 'select' })} onOnline={() => setRoute({ s: 'online' })} onBack={toMenu} />;
       break;
     case 'howto':
       screen = <HowToPlay onBack={toMenu} />;
@@ -74,36 +67,15 @@ export default function App() {
       screen = <Options onBack={toMenu} />;
       break;
     case 'select':
-      screen = (
-        <CharacterSelect
-          key={route.mode}
-          mode={route.mode}
-          onBack={toPlay}
-          onDone={(pick) =>
-            // Single player skips stage select (as in the reference): select -> VS -> fight.
-            route.mode === 'cpu'
-              ? setRoute({ s: 'versus', opts: matchOptions('cpu', pick, STAGES[Math.floor(Math.random() * STAGES.length)].id) })
-              : setRoute({ s: 'stage', mode: route.mode, pick })
-          }
-        />
-      );
+      // Single player: pick your fighter -> automatic opponent -> VS screen -> fight.
+      screen = <CharacterSelect onBack={toPlay} onDone={(pick) => setRoute({ s: 'versus', opts: matchOptions(pick) })} />;
       break;
-    case 'stage': {
-      const { mode, pick } = route;
-      screen = (
-        <StageSelect
-          onBack={() => setRoute({ s: 'select', mode })}
-          onDone={(stage) => setRoute({ s: 'versus', opts: matchOptions(mode, pick, stage) })}
-        />
-      );
-      break;
-    }
     case 'versus':
       screen = (
         <VersusScreen
           p1={route.opts.p1}
           p2={route.opts.p2}
-          labels={route.opts.mode === 'cpu' ? ['PLAYER 1', `CPU · ${route.opts.difficulty.toUpperCase()}`] : ['PLAYER 1', 'PLAYER 2']}
+          labels={['PLAYER 1', `CPU · ${route.opts.difficulty.toUpperCase()}`]}
           onDone={() => setRoute({ s: 'match', key: Date.now(), opts: route.opts })}
         />
       );
@@ -113,13 +85,9 @@ export default function App() {
         <MatchScreen
           key={route.key}
           opts={route.opts}
-          onCharacterSelect={() => setRoute({ s: 'select', mode: route.opts.mode })}
+          onCharacterSelect={() => setRoute({ s: 'select' })}
           onMainMenu={toMenu}
-          onNewOpponent={
-            route.opts.mode === 'cpu'
-              ? () => setRoute({ s: 'versus', opts: { ...route.opts, p2: pickOpponent(route.opts.p1, () => Math.random()) } })
-              : undefined
-          }
+          onNewOpponent={() => setRoute({ s: 'versus', opts: { ...route.opts, p2: pickOpponent(route.opts.p1, () => Math.random()) } })}
         />
       );
       break;
@@ -141,7 +109,20 @@ export default function App() {
   );
 }
 
-function matchOptions(mode: 'cpu' | 'local', pick: SelectResult, stage: string): LocalMatchOptions {
+/**
+ * Test builds only (dev or VITE_E2E): `?cpu=idle` makes the CPU stand still and `?stage=<id>`
+ * pins the stage, so browser tests can measure exact damage and pixels. Ignored in production.
+ */
+function testOverrides(): { idleOpponent: boolean; stage: string | null } {
+  if (!TEST_HOOKS) return { idleOpponent: false, stage: null };
+  const q = new URLSearchParams(location.search);
+  const stage = q.get('stage');
+  return { idleOpponent: q.get('cpu') === 'idle', stage: stage && STAGES.some((s) => s.id === stage) ? stage : null };
+}
+
+function matchOptions(pick: SelectResult): LocalMatchOptions {
   const s = getSettings();
-  return { mode, p1: pick.p1, p2: pick.p2, difficulty: pick.difficulty, stage, roundSeconds: s.roundSeconds, roundsToWin: s.roundsToWin };
+  const t = testOverrides();
+  const stage = t.stage ?? STAGES[Math.floor(Math.random() * STAGES.length)].id;
+  return { p1: pick.p1, p2: pick.p2, difficulty: pick.difficulty, stage, roundSeconds: s.roundSeconds, roundsToWin: s.roundsToWin, idleOpponent: t.idleOpponent };
 }

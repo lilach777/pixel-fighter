@@ -16,33 +16,6 @@ export const P1_DEFAULT: Bindings = {
   SU: ['KeyJ'],
 };
 
-export const P2_DEFAULT: Bindings = {
-  UP: ['ArrowUp'],
-  DOWN: ['ArrowDown'],
-  LEFT: ['ArrowLeft'],
-  RIGHT: ['ArrowRight'],
-  LP: ['Numpad1'],
-  HP: ['Numpad2'],
-  LK: ['Numpad4'],
-  HK: ['Numpad5'],
-  SP: ['Numpad7'],
-  SU: ['Numpad8'],
-};
-
-/** For keyboards without a numpad: arrows + I/O/K/L/P/; (no overlap with Player 1). */
-export const P2_ALT: Bindings = {
-  UP: ['ArrowUp'],
-  DOWN: ['ArrowDown'],
-  LEFT: ['ArrowLeft'],
-  RIGHT: ['ArrowRight'],
-  LP: ['KeyI'],
-  HP: ['KeyO'],
-  LK: ['KeyK'],
-  HK: ['KeyL'],
-  SP: ['KeyP'],
-  SU: ['Semicolon'],
-};
-
 export const BUTTON_LABELS: Record<ButtonName, string> = {
   UP: 'Jump',
   DOWN: 'Crouch',

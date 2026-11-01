@@ -62,14 +62,16 @@ async function startCpu(page: Page, me: string, query = ''): Promise<string> {
   return opp;
 }
 
-/** Local versus with an idle human Player 2 (deterministic target for control tests). */
-async function startLocal(page: Page, p1: string, p2: string, query = '') {
-  await toPlayMenu(page, query);
-  await page.getByTestId('mode-local').click();
-  await page.getByTestId(`char-${p1}`).click();
-  await page.getByTestId(`char-${p2}`).click();
-  await page.getByTestId('stage-rooftop').click();
+/**
+ * Single player against a CPU that stands still (test builds only: ?cpu=idle), on a fixed
+ * stage. A deterministic target for the exact control and damage checks.
+ */
+async function startIdleCpu(page: Page, me: string) {
+  await toPlayMenu(page, '?cpu=idle&stage=rooftop');
+  await page.getByTestId('mode-cpu').click();
+  await page.getByTestId(`char-${me}`).click();
   await page.getByTestId('versus-screen').click(); // skip the countdown
+  await expect(page.getByTestId('match-screen')).toHaveAttribute('data-controllers', 'keyboard-p1,idle');
   await expect(page.getByTestId('hud')).toHaveAttribute('data-phase', 'fight', { timeout: 10_000 });
 }
 
@@ -116,7 +118,7 @@ test('1-3. selecting a fighter auto-assigns a different opponent, shown before t
 });
 
 test('4-5. player moves left/right immediately, jumps and crouches', async ({ page }) => {
-  await startLocal(page, 'rick', 'jeremy');
+  await startIdleCpu(page, 'rick');
   const s0 = await state(page);
   await page.keyboard.down('d');
   await page.waitForTimeout(400);
@@ -144,7 +146,7 @@ test('4-5. player moves left/right immediately, jumps and crouches', async ({ pa
 });
 
 test('6-8. F, G, V and B start the right attacks, run startup/active/recovery and return to neutral', async ({ page }) => {
-  await startLocal(page, 'joshua', 'jeremy');
+  await startIdleCpu(page, 'joshua');
   const moves = getCharacter('joshua').moves;
   for (const [key, slot] of [
     ['f', 'lp'],
@@ -169,7 +171,7 @@ test('6-8. F, G, V and B start the right attacks, run startup/active/recovery an
 });
 
 test('9-11. valid hits damage the opponent, cause hit-stun and knockback; attacking again works', async ({ page }) => {
-  await startLocal(page, 'joshua', 'jeremy');
+  await startIdleCpu(page, 'joshua');
   await walkInto(page);
   const before = await state(page);
   const rec = record(page, 700);
@@ -197,28 +199,20 @@ test('9-11. valid hits damage the opponent, cause hit-stun and knockback; attack
   expect((await state(page)).hp2).toBe(far.hp2);
 });
 
-test('player can block: holding back takes no damage from a jab', async ({ page }) => {
-  await startLocal(page, 'jeremy', 'joshua');
-  await walkInto(page);
-  // Tapping forward can register a double-tap dash; blocking needs a neutral state first.
-  await expect.poll(async () => (await state(page)).action, { timeout: 3000 }).toMatch(/^(idle|walk)$/);
-  // Player 2 attacks; Player 1 (on the left) blocks by holding A (away).
-  const hp = (await state(page)).hp1;
+test('player can block a real CPU attack by holding back', async ({ page }) => {
+  await startCpu(page, 'jeremy');
+  // Hold away from the CPU (Player 1 starts on the left) and wait for the AI to attack.
   await page.keyboard.down('a');
-  const rec = page.evaluate(async () => {
-    const seen: string[] = [];
+  const sawBlock = await page.evaluate(async () => {
     const t0 = performance.now();
-    while (performance.now() - t0 < 500) {
-      seen.push((window as any).__PF.getState().fighters[0].action);
+    while (performance.now() - t0 < 20_000) {
+      if ((window as any).__PF.getState().fighters[0].action === 'blockstun') return true;
       await new Promise((r) => setTimeout(r, 4));
     }
-    return seen;
+    return false;
   });
-  await page.keyboard.press('Numpad1', { delay: 30 });
-  const seen = await rec;
   await page.keyboard.up('a');
-  expect(seen).toContain('blockstun');
-  expect((await state(page)).hp1).toBe(hp); // jabs have no chip damage
+  expect(sawBlock).toBe(true);
 });
 
 test('12. the single-player opponent is driven by the AI (moves and attacks on its own)', async ({ page }) => {
@@ -230,19 +224,6 @@ test('12. the single-player opponent is driven by the AI (moves and attacks on i
     return Math.abs(s.x2 - s0.x2) > 30 || s.hp1 < s0.hp1;
   }, { timeout: 15_000 }).toBe(true);
   await expect.poll(async () => (await state(page)).hp1, { timeout: 20_000 }).toBeLessThan(s0.hp1);
-});
-
-test('13. local Player 2 stays human-controlled (idle without input, moves with arrows)', async ({ page }) => {
-  await startLocal(page, 'rick', 'migo');
-  await expect(page.getByTestId('match-screen')).toHaveAttribute('data-controllers', 'keyboard-p1,keyboard-p2');
-  const s0 = await state(page);
-  await page.waitForTimeout(1500);
-  const s1 = await state(page);
-  expect(s1.x2).toBe(s0.x2); // no AI moving it
-  await page.keyboard.down('ArrowLeft');
-  await page.waitForTimeout(400);
-  await page.keyboard.up('ArrowLeft');
-  expect((await state(page)).x2).toBeLessThan(s1.x2 - 20);
 });
 
 test('15. restart/rematch keeps the opponent and resets the match', async ({ page }) => {

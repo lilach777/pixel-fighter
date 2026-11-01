@@ -5,26 +5,21 @@ async function attr(page: Page, testId: string, name: string): Promise<number> {
   return Number(await page.getByTestId(testId).getAttribute(name));
 }
 
-async function toMainMenu(page: Page) {
-  await page.goto('/');
+async function toMainMenu(page: Page, query = '') {
+  await page.goto(`/${query}`);
   await expect(page.getByTestId('title-screen')).toBeVisible();
   await page.getByTestId('title-screen').click();
   await expect(page.getByTestId('main-menu')).toBeVisible();
 }
 
-/** Walks the menus into a match. */
-async function startMatch(page: Page, mode: 'cpu' | 'local', p1: string, p2: string) {
-  await toMainMenu(page);
+/** Single player; `idle` makes the CPU stand still (test builds only). */
+async function startMatch(page: Page, p1: string, idle = false) {
+  await toMainMenu(page, idle ? '?cpu=idle&stage=rooftop' : '');
   await page.getByTestId('menu-play').click();
-  await page.getByTestId(mode === 'cpu' ? 'mode-cpu' : 'mode-local').click();
+  await page.getByTestId('mode-cpu').click();
   await expect(page.getByTestId('character-select')).toBeVisible();
   await page.getByTestId(`char-${p1}`).click();
-  if (mode === 'local') {
-    await page.getByTestId(`char-${p2}`).click();
-    await expect(page.getByTestId('stage-select')).toBeVisible();
-    await page.getByTestId('stage-rooftop').click();
-  }
-  // CPU opponents are chosen automatically; both modes show the VS screen first.
+  // The CPU opponent is chosen automatically and shown on the VS screen first.
   await expect(page.getByTestId('versus-screen')).toBeVisible();
   await page.getByTestId('versus-screen').click();
   await expect(page.getByTestId('match-screen')).toBeVisible();
@@ -109,7 +104,7 @@ test('character selection shows all eight fighters and starts a CPU match', asyn
 });
 
 test('movement, attacks, health, timer and the pause menu (vs CPU)', async ({ page }) => {
-  await startMatch(page, 'cpu', 'rick', 'joshua');
+  await startMatch(page, 'rick');
   const t0 = await attr(page, 'timer', 'data-seconds');
   const x0 = await page.evaluate(() => (window as any).__PF.getState().fighters[0].x);
   await page.keyboard.down('d');
@@ -131,43 +126,13 @@ test('movement, attacks, health, timer and the pause menu (vs CPU)', async ({ pa
   await expect.poll(() => page.evaluate(() => (window as any).__PF.getState().frame)).toBeGreaterThan(f2);
 });
 
-test('local two-player: both keyboards control their fighter', async ({ page }) => {
-  await startMatch(page, 'local', 'jeff-garzik', 'max-sanchez');
-  const before = await page.evaluate(() => (window as any).__PF.getState().fighters.map((f: { x: number }) => f.x));
-  await page.keyboard.down('d');
-  await page.keyboard.down('ArrowLeft');
-  await page.waitForTimeout(600);
-  await page.keyboard.up('d');
-  await page.keyboard.up('ArrowLeft');
-  const after = await page.evaluate(() => (window as any).__PF.getState().fighters.map((f: { x: number }) => f.x));
-  expect(after[0]).toBeGreaterThan(before[0] + 20);
-  expect(after[1]).toBeLessThan(before[1] - 20);
-  // Player 2 attacks with Numpad keys and damages Player 1.
-  const maxP1 = await attr(page, 'p1-health', 'data-max');
-  for (let i = 0; i < 30 && (await attr(page, 'p1-health', 'data-health')) === maxP1; i++) {
-    const d = await page.evaluate(() => {
-      const s = (window as any).__PF.getState();
-      return Math.abs(s.fighters[1].x - s.fighters[0].x);
-    });
-    if (d > 95) {
-      await page.keyboard.down('ArrowLeft');
-      await page.waitForTimeout(120);
-      await page.keyboard.up('ArrowLeft');
-    } else {
-      await page.keyboard.press('Numpad2', { delay: 30 });
-      await page.waitForTimeout(250);
-    }
-  }
-  expect(await attr(page, 'p1-health', 'data-health')).toBeLessThan(maxP1);
-});
-
 test('knockout, results screen and rematch (played out with real inputs)', async ({ page }) => {
-  await startMatch(page, 'local', 'joshua', 'koala');
-  // Player 2 stays idle; Player 1 wins two rounds by KO.
+  await startMatch(page, 'joshua', true);
+  // The CPU stands still (test build); Player 1 wins two rounds by KO.
   await attackUntil(page, async () => (await attr(page, 'p1-wins', 'data-wins')) >= 1, 120_000);
   await expect(page.getByTestId('banner')).toBeVisible();
   await attackUntil(page, async () => (await page.getByTestId('results').count()) > 0, 120_000);
-  await expect(page.getByTestId('result-title')).toHaveText('PLAYER 1 WINS!');
+  await expect(page.getByTestId('result-title')).toHaveText('YOU WIN!');
   await expect(page.getByTestId('result-rounds')).toHaveText('2 - 0');
   await page.getByTestId('result-rematch').click();
   await expect(page.getByTestId('results')).toBeHidden();

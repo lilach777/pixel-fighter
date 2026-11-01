@@ -7,6 +7,7 @@ import { Menu } from '../components/Menu';
 import { audio } from '../game/audio/audio';
 import { LocalRunner, type LocalMatchOptions } from '../game/engine/localRunner';
 import { updateSettings, useSettings } from '../settings';
+import { isTypingTarget } from '../components/isTyping';
 
 declare global {
   interface Window {
@@ -37,15 +38,16 @@ export function MatchScreen({
     runner.attach(canvasRef.current!);
     runner.onMatchEnd = () => setTimeout(() => setEnded(true), 1800);
     audio.startMusic();
-    if (TEST_HOOKS) window.__PF = { runner, getState: () => runner.state, mode: opts.mode };
+    if (TEST_HOOKS) window.__PF = { runner, getState: () => runner.state, mode: 'cpu' };
     return () => {
       runner.detach();
       if (TEST_HOOKS && window.__PF?.runner === runner) delete window.__PF;
     };
-  }, [runner, opts.mode]);
+  }, [runner]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return; // never steal keys from text fields
       if ((e.code === 'Escape' || e.code === 'KeyP') && !ended) {
         e.preventDefault();
         setPaused((p) => {
@@ -72,13 +74,12 @@ export function MatchScreen({
   let resultTitle = '';
   if (hud?.matchWinner !== null && hud?.matchWinner !== undefined) {
     if (hud.matchWinner === 'draw') resultTitle = 'DRAW GAME';
-    else if (opts.mode === 'cpu') resultTitle = hud.matchWinner === 0 ? 'YOU WIN!' : 'YOU LOSE';
-    else resultTitle = `PLAYER ${hud.matchWinner + 1} WINS!`;
+    else resultTitle = hud.matchWinner === 0 ? 'YOU WIN!' : 'YOU LOSE';
   }
   const winnerName = hud && typeof hud.matchWinner === 'number' ? getCharacter(hud.sides[hud.matchWinner].char).name : '';
 
   return (
-    <div className="match" data-testid="match-screen" data-mode={opts.mode} data-p1={opts.p1} data-p2={opts.p2} data-controllers={runner.controllers.join(',')}>
+    <div className="match" data-testid="match-screen" data-mode="cpu" data-p1={opts.p1} data-p2={opts.p2} data-controllers={runner.controllers.join(',')}>
       <canvas ref={canvasRef} data-testid="arena" />
       <HudView store={runner.hud} />
       <DebugPanel runner={runner} />
@@ -119,7 +120,7 @@ export function MatchScreen({
           </div>
           <Menu
             items={[
-              { label: 'REMATCH', desc: opts.mode === 'cpu' ? 'Same opponent' : undefined, testId: 'result-rematch', onSelect: restart },
+              { label: 'REMATCH', desc: 'Same opponent', testId: 'result-rematch', onSelect: restart },
               ...(onNewOpponent ? [{ label: 'NEW OPPONENT', desc: 'Random new CPU fighter', testId: 'result-new-opponent', onSelect: onNewOpponent }] : []),
               { label: 'CHARACTER SELECT', testId: 'result-select', onSelect: onCharacterSelect },
               { label: 'MAIN MENU', testId: 'result-main', onSelect: onMainMenu },

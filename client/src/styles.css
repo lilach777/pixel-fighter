@@ -483,38 +483,6 @@ button {
   color: #fff;
 }
 
-/* ------------------------------------------------------------------ stage select */
-.stage-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 26cqw);
-  gap: 2cqw;
-}
-
-.stage-card {
-  height: 30cqh;
-  border: 3px solid var(--line);
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 1.5cqh 1cqw;
-  text-align: left;
-  background-size: cover;
-}
-
-.stage-card.active,
-.stage-card:hover {
-  border-color: var(--gold);
-  box-shadow: 0 0 1.2cqw rgba(255, 210, 58, 0.5);
-}
-
-.stage-card .sname {
-  font-family: var(--pixel);
-  font-size: 1.1cqw;
-  color: var(--gold);
-}
-
 /* ------------------------------------------------------------------ match */
 .match {
   position: absolute;

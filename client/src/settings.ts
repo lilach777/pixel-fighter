@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { Difficulty } from '../../shared/src/ai/ai';
-import { P1_DEFAULT, P2_DEFAULT, type Bindings } from './game/input/bindings';
+import { P1_DEFAULT, type Bindings } from './game/input/bindings';
 
 export interface Settings {
   volume: number;
@@ -12,7 +12,6 @@ export interface Settings {
   roundSeconds: number;
   roundsToWin: number;
   p1: Bindings;
-  p2: Bindings;
   playerName: string;
 }
 
@@ -28,7 +27,6 @@ export const DEFAULT_SETTINGS: Settings = {
   roundSeconds: 60,
   roundsToWin: 2,
   p1: P1_DEFAULT,
-  p2: P2_DEFAULT,
   playerName: '',
 };
 
@@ -37,7 +35,10 @@ function load(): Settings {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
-    return { ...DEFAULT_SETTINGS, ...parsed, p1: { ...P1_DEFAULT, ...parsed.p1 }, p2: { ...P2_DEFAULT, ...parsed.p2 } };
+    // Older saves may contain a "p2" key from the removed local-versus mode; it is dropped.
+    const { p2: _legacyP2, ...rest } = parsed as Partial<Settings> & { p2?: unknown };
+    void _legacyP2;
+    return { ...DEFAULT_SETTINGS, ...rest, p1: { ...P1_DEFAULT, ...parsed.p1 } };
   } catch {
     return DEFAULT_SETTINGS;
   }
