@@ -1,11 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Two separate browser contexts (separate storage, separate WebSocket connections)
- * play an online match through the real server.
+ * Two separate browser contexts (separate storage, separate connections) play an online
+ * match, once through the real WebSocket server and once peer-to-peer over WebRTC
+ * (the room creator's browser hosts; signalling via the public PeerJS service, so the
+ * p2p run needs internet access).
  */
-async function openLobby(page: Page, name: string) {
-  await page.goto('/?screen=online');
+const MODES = [
+  { name: 'server', query: '' },
+  { name: 'p2p', query: '&online=p2p' },
+] as const;
+
+async function openLobby(page: Page, name: string, query = '') {
+  await page.goto('/?screen=online' + query);
   await expect(page.getByTestId('online-lobby')).toBeVisible();
   await page.getByTestId('name-input').fill(name);
   await expect(page.getByTestId('conn-status')).toHaveAttribute('data-status', 'connected');
@@ -13,13 +20,15 @@ async function openLobby(page: Page, name: string) {
 
 const health = async (page: Page, side: 'p1' | 'p2') => Number(await page.getByTestId(`${side}-health`).getAttribute('data-health'));
 
-test('online: create, join, ready up and fight a synchronized match', async ({ browser }) => {
+for (const mode of MODES)
+test(`online (${mode.name}): create, join, ready up and fight a synchronized match`, async ({ browser }) => {
   const ctxA = await browser.newContext();
   const ctxB = await browser.newContext();
   const a = await ctxA.newPage();
   const b = await ctxB.newPage();
 
-  await openLobby(a, 'Alpha');
+  await openLobby(a, 'Alpha', mode.query);
+  if (mode.name === 'p2p') await expect(a.getByTestId('online-lobby')).toContainText('Peer-to-peer');
   await a.getByTestId('create-room').click();
   await expect(a.getByTestId('room-screen')).toBeVisible();
   const code = (await a.getByTestId('room-code').textContent())!.trim();
@@ -27,16 +36,16 @@ test('online: create, join, ready up and fight a synchronized match', async ({ b
   await expect(a.getByTestId('waiting-opponent')).toBeVisible();
 
   // Invalid code is rejected with a message.
-  await openLobby(b, 'Bravo');
+  await openLobby(b, 'Bravo', mode.query);
   await b.getByTestId('join-room').click();
   await b.getByTestId('code-input').fill('ZZZZ9');
   await b.getByTestId('join-submit').click();
-  await expect(b.getByTestId('online-error')).toContainText('does not exist');
+  await expect(b.getByTestId('online-error')).toContainText('does not exist', { timeout: 20_000 });
 
   // Valid code joins.
   await b.getByTestId('code-input').fill(code.toLowerCase());
   await b.getByTestId('join-submit').click();
-  await expect(b.getByTestId('room-screen')).toBeVisible();
+  await expect(b.getByTestId('room-screen')).toBeVisible({ timeout: 20_000 });
   await expect(b.getByTestId('room-code')).toHaveText(code);
   await expect(a.getByTestId('slot-opponent')).toContainText('Bravo');
 

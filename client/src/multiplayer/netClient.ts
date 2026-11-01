@@ -5,6 +5,8 @@ import {
   type RoomInfo,
   type ServerMessage,
 } from '../../../shared/src/protocol';
+import { TEST_HOOKS } from '../testHooks';
+import { P2PSocket } from './p2p';
 
 export type ConnStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'unavailable' | 'closed';
 
@@ -20,10 +22,24 @@ export interface NetView {
   matchEnd: { id: number; winner: Slot | 'draw'; reason: string } | null;
 }
 
-/** Resolves the WebSocket URL: VITE_WS_URL in production builds, same-origin /ws otherwise. */
+/** Pseudo server address for peer-to-peer (WebRTC) play: no game server involved. */
+export const P2P_URL = 'p2p';
+
+/**
+ * Picks how online play connects:
+ *  - VITE_ONLINE_MODE=p2p, or a production build with neither VITE_WS_URL nor
+ *    VITE_ONLINE_MODE=server: peer-to-peer over WebRTC (works on static hosts like Vercel).
+ *  - otherwise the WebSocket game server: VITE_WS_URL, or same-origin /ws.
+ */
 export function resolveWsUrl(): string {
+  const mode = import.meta.env.VITE_ONLINE_MODE as string | undefined;
   const configured = import.meta.env.VITE_WS_URL as string | undefined;
+  if (mode === 'p2p') return P2P_URL;
+  // Test builds only: ?online=p2p exercises peer-to-peer play against a server build.
+  if (TEST_HOOKS && new URLSearchParams(location.search).get('online') === 'p2p') return P2P_URL;
   if (configured) return configured;
+  // `npm run dev` runs the game server next to Vite; production builds default to P2P.
+  if (mode !== 'server' && !import.meta.env.DEV) return P2P_URL;
   // Development only: ?server=wss://host/ws points the client at another server.
   // Disabled in production so a crafted link cannot redirect players (and their
   // session tokens) to an untrusted server.
@@ -41,7 +57,7 @@ const RESUME_PREFIX = 'pixel-fighters.resume:';
  * reconnects automatically (with the server-issued resume token) after drops.
  */
 export class NetClient {
-  private ws: WebSocket | null = null;
+  private ws: WebSocket | P2PSocket | null = null;
   private view: NetView = {
     status: 'idle',
     room: null,
@@ -63,6 +79,10 @@ export class NetClient {
   private welcomeWaiters: { resolve: () => void; reject: (e: Error) => void }[] = [];
   private seq = 0;
   readonly url: string;
+  /** True for peer-to-peer play (the room creator's browser hosts the match). */
+  get p2p(): boolean {
+    return this.url === P2P_URL;
+  }
   /** Resume tokens are stored per server URL, so a token is only ever sent back to the server that issued it. */
   private get resumeKey(): string {
     return RESUME_PREFIX + this.url;
@@ -95,16 +115,16 @@ export class NetClient {
     return new Promise((resolve, reject) => {
       this.welcomeWaiters.push({ resolve, reject });
       // A socket is already opening (e.g. React StrictMode re-ran the effect): just wait for it.
-      if (this.ws && this.ws.readyState === WebSocket.CONNECTING) return;
+      if (this.ws && this.ws.readyState === 0 /* CONNECTING */) return;
       this.open();
     });
   }
 
   private open(): void {
     this.patch({ status: this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting', error: null });
-    let ws: WebSocket;
+    let ws: WebSocket | P2PSocket;
     try {
-      ws = new WebSocket(this.url);
+      ws = this.p2p ? new P2PSocket() : new WebSocket(this.url);
     } catch {
       this.fail('Invalid server address.');
       return;
@@ -121,7 +141,7 @@ export class NetClient {
       }
       this.send({ t: 'hello', v: PROTOCOL_VERSION, name: this.name, resume });
     };
-    ws.onmessage = (ev) => {
+    ws.onmessage = (ev: { data: unknown }) => {
       let msg: ServerMessage;
       try {
         msg = JSON.parse(String(ev.data)) as ServerMessage;
@@ -182,7 +202,7 @@ export class NetClient {
   }
 
   private send(msg: ClientMessage): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
+    if (this.ws && this.ws.readyState === 1 /* OPEN */) this.ws.send(JSON.stringify(msg));
   }
 
   private startPing(): void {

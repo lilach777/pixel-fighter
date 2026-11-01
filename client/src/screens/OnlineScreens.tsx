@@ -141,7 +141,7 @@ function OnlineLobby({ net, onExit }: { net: NetClient; onExit: () => void }) {
         </form>
       )}
       <div className="hint" style={{ marginTop: 'auto' }}>
-        Server: {net.url}
+        {net.p2p ? 'Peer-to-peer (WebRTC): the room creator hosts the match' : `Server: ${net.url}`}
       </div>
     </div>
   );

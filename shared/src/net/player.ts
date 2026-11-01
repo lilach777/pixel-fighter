@@ -1,6 +1,6 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import type { Slot } from '../../../shared/src/engine/state';
-import type { ServerMessage } from '../../../shared/src/protocol';
+import type { Slot } from '../engine/state';
+import type { ServerMessage } from '../protocol';
+import { randomId, randomToken } from './random';
 import type { Room } from './room';
 
 export interface Transport {
@@ -11,8 +11,8 @@ export interface Transport {
 
 /** A player identity. Survives socket drops (rebound via the resume token). */
 export class Player {
-  readonly id = randomUUID();
-  readonly token = randomBytes(18).toString('base64url');
+  readonly id = randomId();
+  readonly token = randomToken(18);
   name = 'Player';
   transport: Transport | null = null;
   room: Room | null = null;

@@ -1,6 +1,6 @@
 # Pixel Fighters: Arcade
 
-A browser pixel-art fighting game with eight fighters built from the supplied character sprite sheets. It has a single-player mode against a three-level AI and **online multiplayer** through an authoritative Node.js WebSocket server. The arcade presentation (CRT frame, purple neon, night-city stage, centre timer, combo counter, named supers) is inspired by the *Agent Fighter* reference video.
+A browser pixel-art fighting game with eight fighters built from the supplied character sprite sheets. It has a single-player mode against a three-level AI and **online multiplayer**: peer-to-peer over WebRTC (works on static hosts such as Vercel, no server needed) or through an authoritative Node.js WebSocket server. The arcade presentation (CRT frame, purple neon, night-city stage, centre timer, combo counter, named supers) is inspired by the *Agent Fighter* reference video.
 
 ![Title](docs/screenshots/01-title.png)
 
@@ -43,7 +43,7 @@ The title and menus play a live fight between two randomly chosen roster fighter
 ## Modes
 
 * **1 Player vs CPU**: pick your fighter and CPU level. The opponent is then chosen automatically at random from the other seven fighters, shown on a VS screen with a 3-2-1 countdown, and played by the AI. Rematch keeps the same opponent; **NEW OPPONENT** on the results screen draws a new one.
-* **Online Versus**: create a room, share the 5-character code, the friend joins, both choose a fighter and press READY. The match runs on the server. Afterwards you can vote for a rematch, change fighter or leave.
+* **Online Versus**: create a room, share the 5-character code, the friend joins, both choose a fighter and press READY. On static hosting (the default production build) the match runs in the room creator's browser and the friend connects to it directly over WebRTC; with the game server deployed it runs on the server. Afterwards you can vote for a rematch, change fighter or leave.
 
 Rules: 60-second rounds, best of three (both configurable in Options). A timeout goes to the higher remaining health percentage.
 
@@ -92,15 +92,15 @@ Shortcut: http://localhost:5173/?screen=online opens the online lobby directly.
 
 **Two computers on the same network:** run `npm run dev:server` plus `npx vite --config client/vite.config.ts --host` on one machine, then open `http://<that-machine's-LAN-IP>:5173` on both. Allow Node through the OS firewall if prompted.
 
-**Over the internet:** deploy the server (see below).
+**Over the internet:** deploy the frontend anywhere, including Vercel. Production builds use peer-to-peer play, so no game server is needed (see below).
 
 ## Deployment
 
 See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. In short:
 
-* **Recommended:** one Node web service that serves the built client and the WebSocket server on one HTTPS origin. Render (`render.yaml` blueprint included) or any Docker host (`Dockerfile` included). Build with `npm ci --include=dev && npm run build`, start with `npm start`, health check `/health`. In production the server accepts WebSockets only from its own host by default; behind a proxy set `TRUST_PROXY` (`cloudflare` on Render, or `xff` with `TRUSTED_PROXIES`; see the deployment guide).
+* **Recommended:** one Node web service that serves the built client and the WebSocket server on one HTTPS origin. Render (`render.yaml` blueprint included) or any Docker host (`Dockerfile` included). Build with `npm ci --include=dev && VITE_ONLINE_MODE=server npm run build` (the blueprint and Dockerfile set it), start with `npm start`, health check `/health`. In production the server accepts WebSockets only from its own host by default; behind a proxy set `TRUST_PROXY` (`cloudflare` on Render, or `xff` with `TRUSTED_PROXIES`; see the deployment guide).
 * **Split hosting:** a static host for `client/dist` (built with `VITE_WS_URL=wss://your-server/ws`) plus a WebSocket-capable Node host for the server.
-* Static hosts cannot run the game server. **Vercel, Netlify, GitHub Pages and similar can host only the frontend**: online play there shows *SERVER UNAVAILABLE* unless the frontend is built with `VITE_WS_URL` pointing at a game server running on a WebSocket-capable host (for example Render). Production must use `wss://`.
+* **Static hosting (Vercel, Netlify, GitHub Pages):** `npm run build:client` and publish `client/dist`. Online play is then **peer-to-peer over WebRTC** ([PeerJS](https://peerjs.com/)): the room code is registered with the public PeerJS signalling service, the guest's browser connects directly to the host's browser, and the host's browser runs the same authoritative game logic as the server. No game server is involved. Static hosts cannot run the WebSocket server itself, so a server deployment needs a Node host as above. Production WebSockets must use `wss://`.
 
 **Status:** not yet deployed publicly; this needs your hosting account. Everything was verified locally (see Testing).
 
@@ -112,21 +112,22 @@ shared/src/          deterministic game core, used by BOTH client and server
   characters/        eight-character roster with move data
   ai/                CPU opponent (perception delay, blocking, anti-air, punishes, combos)
   protocol.ts        versioned network messages + strict validation
+  net/               the authoritative hub: rooms, players, readiness, countdown, pause/resume, forfeit, rematch,
+                     rate limits. Runs in the Node server and, for peer-to-peer play, in the host's browser
 client/src/          React menus + Canvas 2D arena
   game/              renderer, procedural stages/effects, sprite animation, input, audio, HUD model
-  multiplayer/       WebSocket client (reconnect + resume) and snapshot-interpolating online runner
+  multiplayer/       online client (WebSocket or WebRTC peer-to-peer), snapshot-interpolating online runner
   screens/ components/
 server/src/          Node + ws authoritative server
   networking/        HTTP (/health, static client), WebSocket upgrade, origin check, limits, 60 Hz loop
-  rooms/             rooms, players, readiness, countdown, pause/resume, forfeit, rematch
-  security/          rate limiting, origin allow-list
+  security/          origin allow-list, client IP policy
 scripts/             sprite pipeline (inspect, background removal, slicing, atlas, metadata, previews), docs generator, balance sim
 tests/unit|integration|e2e
 docs/                audit, animation mapping, moves, protocol, deployment, testing, screenshots
 ```
 
 * **Fixed timestep with interpolation:** the simulation always advances in 1/60 s steps. Rendering runs independently with `requestAnimationFrame` and draws fighter positions blended between the last two steps, so movement is even at any refresh rate; sprites still snap to whole pixels and use nearest-neighbour scaling. Effects, screen shake and stage animation advance per simulation frame, not per rendered frame.
-* **Online is server-authoritative:** clients send sequenced input bitmasks. The server steps the same engine and broadcasts 30 Hz snapshots plus events, and clients interpolate. The protocol is documented in [docs/PROTOCOL.md](docs/PROTOCOL.md).
+* **Online is host-authoritative:** clients send sequenced input bitmasks. The host (the server, or in peer-to-peer play the room creator's browser) steps the same engine and broadcasts 30 Hz snapshots plus events, and clients interpolate. The protocol is documented in [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ## Assets
 
@@ -152,6 +153,7 @@ In development (`npm run dev`), press **F2** during an offline match, or open th
 * **Mirrored text:** fighters facing left are mirrored, so logos on clothing read backwards.
 * **Balance:** tuned with AI-vs-AI simulation (30–65% win rates at Normal); it has not been human-playtested.
 * **Online pause:** online matches cannot be paused. Leaving forfeits.
+* **Peer-to-peer play:** the room creator's browser is the referee, so a modified host could cheat (fine among friends; deploy the server for untrusted play). If the host closes or backgrounds their tab the match stalls or ends. Some networks (strict NATs, some corporate or mobile networks) block direct WebRTC connections; joining then fails with "Could not connect to the host" unless a TURN relay is configured (`VITE_TURN_URL`). Room discovery depends on the public PeerJS signalling service.
 * **Browsers:** tested in Chrome only. No gamepad support (keyboard only).
 * **Hosting:** Render's free plan sleeps when idle, and the Dockerfile has not been built yet.
 

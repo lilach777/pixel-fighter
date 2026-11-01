@@ -3,6 +3,7 @@
 Source of truth: `shared/src/protocol.ts` (types + validators shared by client and server).
 
 * Transport: WebSocket, path **`/ws`**, JSON text frames. Binary frames are rejected.
+* Peer-to-peer mode carries the **same messages** over a reliable, ordered WebRTC data channel (PeerJS, `raw` serialization) to the room creator's browser, which runs the same `GameHub` (`shared/src/net/hub.ts`) with the same validation and rate limits. Room code `ABCDE` is found through the PeerJS peer id `pixel-fighters-v1-ABCDE`. Per-IP and origin limits do not apply there (no server).
 * Version: `PROTOCOL_VERSION = 1`. The client sends it in `hello`; a mismatch returns `version_mismatch` and the socket is closed. Bump the version for any incompatible change.
 * Limits: max frame **2048 bytes** (validated) — the socket hard limit is 4096 bytes; token-bucket rate limit **150 burst / 100 msgs per second**; **20 invalid messages** close the socket with code 1008. Unknown fields are rejected.
 * Connection limits: at most 16 simultaneous connections per client IP (HTTP 429 beyond that; `MAX_CONNECTIONS_PER_IP`), and room create/join attempts are limited to 6 quickly then 1 every 3 s per connection (`rate_limited` error), so room codes cannot be brute-forced.

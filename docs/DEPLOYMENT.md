@@ -2,6 +2,8 @@
 
 > **Status:** the game has been built and tested locally (see `docs/TESTING.md`). It has **not been deployed** to a public host yet, because no hosting credentials were available. The steps below are what remains for you to do.
 
+**Peer-to-peer (no server):** a production build made without `VITE_WS_URL` / `VITE_ONLINE_MODE=server` plays online **peer-to-peer over WebRTC**, so it works on any static host (Vercel, Netlify, GitHub Pages, Cloudflare Pages): build with `npm run build:client`, publish `client/dist`. The room creator's browser hosts the match (the same `GameHub` code the server runs), the public PeerJS service introduces the two browsers, and game traffic then flows directly between them. See *Option 0* and the trade-offs in the README's *Known limitations*.
+
 The game server is a long-running Node.js process that holds **persistent WebSocket connections**. It therefore needs a host that runs Node and supports WebSockets (Render web services, Railway, Fly.io, a VPS, …). A purely static host (GitHub Pages, Netlify/Vercel static) can host the **frontend only** — never the game server.
 
 Two supported layouts:
@@ -37,7 +39,10 @@ npm start              # node server/dist/index.js
 | `SNAPSHOT_HZ` | server | 30 | Snapshot rate to clients (simulation is always 60 Hz). |
 | `RECONNECT_GRACE_MS` | server | 20000 | Seat hold time after a drop during a match. |
 | `COUNTDOWN_MS`, `ROOM_IDLE_MS`, `MAX_ROOMS`, `MAX_CONNECTIONS`, `ROUND_SECONDS`, `ROUNDS_TO_WIN` | server | see `.env.example` | Room/match tuning and limits. |
-| `VITE_WS_URL` | **client build time** | empty | Full WebSocket URL of the game server for layout B, e.g. `wss://api.example.com/ws`. Leave empty for layout A (same-origin `/ws`). |
+| `VITE_WS_URL` | **client build time** | empty | Full WebSocket URL of the game server for layout B, e.g. `wss://api.example.com/ws`. Setting it selects server mode. |
+| `VITE_ONLINE_MODE` | **client build time** | production: `p2p` (unless `VITE_WS_URL` is set); `npm run dev`: `server` | `p2p` = peer-to-peer over WebRTC, no game server needed (static hosts such as Vercel). `server` = the WebSocket game server (same-origin `/ws` or `VITE_WS_URL`). The Render blueprint sets `server`. |
+| `VITE_PEER_HOST`, `VITE_PEER_PORT`, `VITE_PEER_PATH`, `VITE_PEER_KEY`, `VITE_PEER_SECURE` | client build time | public PeerJS cloud | P2P only: use your own [PeerJS server](https://github.com/peers/peerjs-server) for signalling instead of the public one. |
+| `VITE_TURN_URL`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` | client build time | PeerJS defaults | P2P only: your TURN relay (comma-separated URLs) for players whose networks block direct connections. TURN credentials built into a frontend are public; use a provider's restricted or short-lived credentials. |
 
 No secrets are required. `.env.example` lists everything with safe placeholders; a local `.env` is read by the server in development and by Vite at build time.
 
@@ -59,6 +64,14 @@ The server limits simultaneous connections per client IP (`MAX_CONNECTIONS_PER_I
 The server logs its client-IP source at startup and logs `per-IP connection limit reached for <ip>` when it rejects a connection.
 
 **Verify after deploying:** open more than 16 connections from one machine while sending a different forged `X-Forwarded-For` value on each (for example with a small `ws` script). Connections beyond the limit must be rejected with HTTP 429, and the log line must show your real IP, not a forged one.
+
+## Option 0 — Static hosting, peer-to-peer (Vercel etc.)
+
+1. Build command `npm run build:client`, output directory `client/dist`, install command `npm ci --include=dev`.
+2. Do **not** set `VITE_WS_URL` or `VITE_ONLINE_MODE=server` (remove an old `VITE_WS_URL` from the project settings if there is one).
+3. Deploy, open the site in two browsers (ideally on different networks), create a room in one and join with the code in the other. The online lobby shows "Peer-to-peer (WebRTC)".
+
+Optional: `VITE_TURN_URL` / `VITE_TURN_USERNAME` / `VITE_TURN_CREDENTIAL` for a TURN relay, `VITE_PEER_HOST` etc. for your own signalling server.
 
 ## Option 1 — Render (layout A, blueprint included)
 

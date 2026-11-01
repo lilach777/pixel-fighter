@@ -2,21 +2,13 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { TICK_MS } from '../../../shared/src/constants';
-import {
-  MAX_MESSAGE_BYTES,
-  PROTOCOL_VERSION,
-  parseClientMessage,
-  sanitizeName,
-  type ClientMessage,
-  type ErrorCode,
-} from '../../../shared/src/protocol';
-import { Player, type Transport } from '../rooms/player';
-import type { RoomOptions } from '../rooms/room';
-import { RoomManager } from '../rooms/roomManager';
+import { MAX_MESSAGE_BYTES, PROTOCOL_VERSION } from '../../../shared/src/protocol';
+import { GameHub } from '../../../shared/src/net/hub';
+import type { Transport } from '../../../shared/src/net/player';
+import type { RoomOptions } from '../../../shared/src/net/room';
+import type { RoomManager } from '../../../shared/src/net/roomManager';
 import { resolveClientIp, type ClientIpPolicy } from '../security/clientIp';
 import { makeOriginCheck } from '../security/origin';
-import { TokenBucket } from '../security/rateLimit';
 
 export interface GameServerOptions {
   port: number;
@@ -57,7 +49,6 @@ export const DEFAULT_OPTIONS: GameServerOptions = {
   log: (m) => console.log(`[server] ${m}`),
 };
 
-const MAX_STRIKES = 20;
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -92,7 +83,7 @@ class WsTransport implements Transport {
 export async function createGameServer(partial: Partial<GameServerOptions> = {}): Promise<GameServer> {
   const opts: GameServerOptions = { ...DEFAULT_OPTIONS, ...partial };
   const now = () => Date.now();
-  const rooms = new RoomManager({
+  const hub = new GameHub({
     snapshotEvery: opts.snapshotEvery,
     reconnectGraceMs: opts.reconnectGraceMs,
     countdownMs: opts.countdownMs,
@@ -105,7 +96,6 @@ export async function createGameServer(partial: Partial<GameServerOptions> = {})
     maxRooms: opts.maxRooms,
     roomIdleMs: opts.roomIdleMs,
   });
-  const byToken = new Map<string, Player>();
   const originOk = makeOriginCheck(opts.allowedOrigins);
   let connections = 0;
   const perIp = new Map<string, number>();
@@ -162,24 +152,8 @@ export async function createGameServer(partial: Partial<GameServerOptions> = {})
     connections++;
     const ip = clientIp(req);
     perIp.set(ip, (perIp.get(ip) ?? 0) + 1);
-    // Room create/join attempts are limited separately so room codes cannot be
-    // brute-forced: 6 quick attempts, then one every 3 seconds.
-    const joinBucket = new TokenBucket(6, 1 / 3);
-    const transport = new WsTransport(ws);
-    const bucket = new TokenBucket(150, 100);
-    let player: Player | null = null;
-    let strikes = 0;
+    const conn = hub.connect(new WsTransport(ws));
     let alive = true;
-
-    const sendRaw = (obj: unknown) => {
-      if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(obj));
-    };
-    const error = (code: ErrorCode, message: string) => sendRaw({ t: 'error', code, message });
-    const strike = (why: string) => {
-      strikes++;
-      error('bad_message', why);
-      if (strikes >= MAX_STRIKES) ws.close(1008, 'too many invalid messages');
-    };
 
     ws.on('pong', () => {
       alive = true;
@@ -198,156 +172,18 @@ export async function createGameServer(partial: Partial<GameServerOptions> = {})
       ws.ping();
     }, 15000);
 
-    ws.on('message', (data, isBinary) => {
-      if (isBinary) return strike('binary frames are not supported');
-      if (!bucket.take()) {
-        error('rate_limited', 'Too many messages.');
-        strikes += 0.25;
-        if (strikes >= MAX_STRIKES) ws.close(1008, 'rate limit');
-        return;
-      }
-      const text = data.toString();
-      const parsed = parseClientMessage(text);
-      if (!parsed.ok) return strike(parsed.error);
-      handle(parsed.msg);
-    });
-
+    ws.on('message', (data, isBinary) => conn.message(data.toString(), isBinary));
     ws.on('close', () => {
       connections--;
       const left = (perIp.get(ip) ?? 1) - 1;
       if (left <= 0) perIp.delete(ip);
       else perIp.set(ip, left);
       clearInterval(heartbeat);
-      if (!player || player.transport !== transport) return;
-      player.transport = null;
-      const p = player;
-      if (p.room) {
-        const inMatch = p.room.phase === 'playing' || p.room.phase === 'paused';
-        if (inMatch) {
-          p.room.onDisconnect(p);
-          // The room's grace timer decides; drop the identity afterwards.
-          setTimeout(() => {
-            if (!p.connected && !p.room) byToken.delete(p.token);
-          }, opts.reconnectGraceMs + 1000);
-        } else {
-          // Outside a match a dropped player gives up their seat shortly after.
-          p.room.onDisconnect(p);
-          setTimeout(() => {
-            if (!p.connected) {
-              rooms.leave(p, 'timeout');
-              byToken.delete(p.token);
-            }
-          }, Math.min(opts.reconnectGraceMs, 10000));
-        }
-      } else {
-        byToken.delete(p.token);
-      }
+      conn.close();
     });
-
-    function handle(msg: ClientMessage): void {
-      if (msg.t === 'ping') {
-        sendRaw({ t: 'pong', ts: msg.ts, serverTime: Date.now() });
-        return;
-      }
-      if (msg.t === 'hello') {
-        if (msg.v !== PROTOCOL_VERSION) {
-          error('version_mismatch', `Client protocol v${msg.v} is not supported (server v${PROTOCOL_VERSION}). Refresh the page.`);
-          ws.close(1008, 'version mismatch');
-          return;
-        }
-        if (player) return; // duplicate hello
-        const resumed = msg.resume ? byToken.get(msg.resume) : undefined;
-        if (resumed && !resumed.connected) {
-          player = resumed;
-          player.transport = transport;
-          opts.log(`player ${player.name} resumed`);
-          sendRaw({ t: 'welcome', v: PROTOCOL_VERSION, playerId: player.id, resume: player.token, serverTime: Date.now() });
-          player.room?.onReconnect(player);
-          return;
-        }
-        player = new Player();
-        player.name = sanitizeName(msg.name);
-        player.transport = transport;
-        byToken.set(player.token, player);
-        sendRaw({ t: 'welcome', v: PROTOCOL_VERSION, playerId: player.id, resume: player.token, serverTime: Date.now() });
-        return;
-      }
-      if (!player) {
-        strike('send hello first');
-        return;
-      }
-      const p = player;
-      switch (msg.t) {
-        case 'createRoom':
-        case 'joinRoom':
-          if (!joinBucket.take()) {
-            error('rate_limited', 'Too many room attempts. Wait a few seconds and try again.');
-            return;
-          }
-      }
-      switch (msg.t) {
-        case 'createRoom': {
-          if (msg.name !== undefined) p.name = sanitizeName(msg.name);
-          const r = rooms.create(p);
-          if (!r.ok) error(r.code, r.message);
-          return;
-        }
-        case 'joinRoom': {
-          if (msg.name !== undefined) p.name = sanitizeName(msg.name);
-          const r = rooms.join(p, msg.code);
-          if (!r.ok) error(r.code, r.message);
-          return;
-        }
-        case 'leaveRoom':
-          if (!p.room) {
-            sendRaw({ t: 'left' });
-            return;
-          }
-          rooms.leave(p);
-          return;
-      }
-      const room = p.room;
-      if (!room) {
-        error('not_in_room', 'Join or create a room first.');
-        return;
-      }
-      let problem: string | null = null;
-      switch (msg.t) {
-        case 'selectCharacter':
-          problem = room.selectCharacter(p, msg.char);
-          break;
-        case 'ready':
-          problem = room.setReady(p, msg.ready);
-          break;
-        case 'rematch':
-          problem = room.voteRematch(p, msg.vote);
-          break;
-        case 'input':
-          if (room.phase === 'playing') room.setInput(p, msg.seq, msg.bits);
-          break;
-      }
-      if (problem) error('invalid_state', problem);
-    }
   });
 
-  // ------------------------------------------------------------------ loop
-  // Drift-corrected fixed-rate loop: steps every room once per 1/60 s of real time.
-  let next = performance.now();
-  let running = true;
-  const loop = () => {
-    if (!running) return;
-    const t = performance.now();
-    let steps = 0;
-    while (t >= next && steps < 5) {
-      rooms.tick();
-      next += TICK_MS;
-      steps++;
-    }
-    if (t - next > 250) next = t; // fell far behind (debugger/sleep): resync
-    setTimeout(loop, Math.max(1, next - performance.now()));
-  };
-  setTimeout(loop, 0);
-  const cleanupTimer = setInterval(() => rooms.cleanup(), 30000);
+  hub.start();
 
   await new Promise<void>((resolve) => server.listen(opts.port, opts.host, resolve));
   const addr = server.address();
@@ -356,11 +192,10 @@ export async function createGameServer(partial: Partial<GameServerOptions> = {})
 
   return {
     port,
-    rooms,
-    stats: () => ({ rooms: rooms.rooms.size, connections, players: byToken.size }),
+    rooms: hub.rooms,
+    stats: () => ({ rooms: hub.rooms.rooms.size, connections, players: hub.playerCount }),
     close: async () => {
-      running = false;
-      clearInterval(cleanupTimer);
+      hub.stop();
       for (const c of wss.clients) c.terminate();
       await new Promise<void>((r) => wss.close(() => r()));
       await new Promise<void>((r) => server.close(() => r()));

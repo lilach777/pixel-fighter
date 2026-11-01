@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ServerMessage } from '../../shared/src/protocol';
-import { Player, type Transport } from '../../server/src/rooms/player';
-import { RoomManager, generateRoomCode } from '../../server/src/rooms/roomManager';
+import { Player, type Transport } from '../../shared/src/net/player';
+import { RoomManager, generateRoomCode } from '../../shared/src/net/roomManager';
 import { isValidRoomCode } from '../../shared/src/protocol';
 
 class FakeTransport implements Transport {

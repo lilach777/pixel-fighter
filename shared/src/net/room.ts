@@ -1,7 +1,7 @@
-import { stepMatch, forfeitMatch, type GameEvent } from '../../../shared/src/engine/sim';
-import { createMatch, type MatchConfig, type MatchState, type Slot } from '../../../shared/src/engine/state';
-import { sanitizeInput } from '../../../shared/src/input';
-import { toNetState, type RoomInfo, type RoomPhase } from '../../../shared/src/protocol';
+import { stepMatch, forfeitMatch, type GameEvent } from '../engine/sim';
+import { createMatch, type MatchConfig, type MatchState, type Slot } from '../engine/state';
+import { sanitizeInput } from '../input';
+import { toNetState, type RoomInfo, type RoomPhase } from '../protocol';
 import type { Player } from './player';
 
 export interface RoomOptions {

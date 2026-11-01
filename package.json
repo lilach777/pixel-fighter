@@ -2,7 +2,7 @@
   "name": "pixel-fighters-arcade",
   "version": "1.0.0",
   "private": true,
-  "description": "Pixel Fighters: Arcade — browser pixel-art fighting game with AI, local versus and server-authoritative online multiplayer.",
+  "description": "Pixel Fighters: Arcade — browser pixel-art fighting game with AI and online multiplayer (WebRTC peer-to-peer or an authoritative WebSocket server).",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -27,6 +27,7 @@
     "simulate": "tsx scripts/simulate.ts"
   },
   "dependencies": {
+    "peerjs": "1.5.5",
     "pngjs": "^7.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# This image runs the game server, so the frontend uses it instead of peer-to-peer.
+ENV VITE_ONLINE_MODE=server
 RUN npm run build
 
 FROM node:22-alpine

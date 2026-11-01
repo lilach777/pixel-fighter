@@ -1,5 +1,5 @@
-import { randomInt } from 'node:crypto';
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, isValidRoomCode, type ErrorCode } from '../../../shared/src/protocol';
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, isValidRoomCode, type ErrorCode } from '../protocol';
+import { randomInt } from './random';
 import type { Player } from './player';
 import { Room, type RoomOptions } from './room';
 
@@ -9,18 +9,24 @@ export function generateRoomCode(): string {
   return s;
 }
 
+export interface RoomManagerOptions extends RoomOptions {
+  maxRooms: number;
+  roomIdleMs: number;
+  /** Room code source (default: random). Peer-to-peer hosts use their reserved code. */
+  generateCode?: () => string;
+}
+
 export class RoomManager {
   readonly rooms = new Map<string, Room>();
 
-  constructor(
-    private opts: RoomOptions & { maxRooms: number; roomIdleMs: number },
-  ) {}
+  constructor(private opts: RoomManagerOptions) {}
 
   create(p: Player): { ok: true; room: Room } | { ok: false; code: ErrorCode; message: string } {
     if (this.rooms.size >= this.opts.maxRooms) return { ok: false, code: 'server_full', message: 'Server is full. Try again later.' };
     this.leave(p);
-    let code = generateRoomCode();
-    for (let i = 0; this.rooms.has(code) && i < 50; i++) code = generateRoomCode();
+    const gen = this.opts.generateCode ?? generateRoomCode;
+    let code = gen();
+    for (let i = 0; this.rooms.has(code) && i < 50; i++) code = gen();
     if (this.rooms.has(code)) return { ok: false, code: 'server_full', message: 'Could not allocate a room code.' };
     const room = new Room(code, this.opts);
     this.rooms.set(code, room);

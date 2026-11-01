@@ -42,7 +42,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 180_000,
       // VITE_E2E=true compiles the test hooks into this build (a plain release build has none).
-      env: { PORT: String(PROD_PORT), SERVE_CLIENT: 'true', COUNTDOWN_MS: '800', ALLOWED_ORIGINS: `http://localhost:${PROD_PORT}`, VITE_E2E: 'true' },
+      env: { PORT: String(PROD_PORT), SERVE_CLIENT: 'true', COUNTDOWN_MS: '800', ALLOWED_ORIGINS: `http://localhost:${PROD_PORT}`, VITE_E2E: 'true', VITE_ONLINE_MODE: 'server' },
     },
     {
       command: 'npm run dev',

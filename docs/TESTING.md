@@ -82,6 +82,10 @@ Unit: `tests/unit/opponent.test.ts` (never the same fighter, all 8 others reacha
 
 Local versus (two players on one keyboard) was removed from the game. Tests that used it to get a still opponent now use single player with a **test-only** switch: `?cpu=idle` (the CPU stands still) and `?stage=<id>` (a fixed stage). Both work only in development builds and builds made with `VITE_E2E=true`; a normal `npm run build` contains neither. The tests specific to local versus, and the Player 2 key-layout unit test, were deleted. The block test now blocks a real CPU attack instead of Player 2's numpad jab.
 
+## Peer-to-peer online play
+
+The online match test runs twice: through the WebSocket server and peer-to-peer over WebRTC (`?online=p2p`, a test-build-only switch; release builds without a server use P2P by default). The P2P run uses two separate browser contexts and the real public PeerJS signalling service, so it needs internet access. It covers create, invalid code, join, character select, ready, host-decided damage shown on both screens, movement sync and forfeit.
+
 ## Bugs found by the tests and fixed
 
 * **Checkerboard visible behind Max Sanchez's flame-ring super.** Glow-tinted checker enclosed by the fire ring survived background removal. It is fixed in the asset pipeline (see ASSET_AUDIT, iteration 6). Regression coverage:
